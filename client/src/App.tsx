@@ -18,7 +18,9 @@ const ApplicationsListPage = lazy(() => import('./pages/ApplicationsListPage'));
 const ApplicationDetailPage = lazy(() => import('./pages/ApplicationDetailPage'));
 const AddApplicationPage = lazy(() => import('./pages/AddApplicationPage'));
 const EditApplicationPage = lazy(() => import('./pages/EditApplicationPage'));
+const EditProfilePage = lazy(() => import('./pages/EditProfilePage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const RemindersListPage = lazy(() => import('./pages/RemindersListPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
@@ -101,6 +103,22 @@ function Router() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/profile/edit"
+        element={
+          <ProtectedRoute>
+            <EditProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <SettingsPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Default and Fallback Routes */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -113,7 +131,7 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light">
+      <ThemeProvider defaultTheme="light" switchable>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <TooltipProvider>

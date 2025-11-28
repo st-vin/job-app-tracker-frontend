@@ -14,13 +14,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { APP_LOGO, APP_TITLE } from "@/const";
-import {
-  AlarmClock,
-  LayoutDashboard,
-  ListChecks,
-  PlusCircle,
-  UserRound,
-} from "lucide-react";
+import { AlarmClock, LayoutDashboard, ListChecks, PlusCircle, Settings2, UserRound } from "lucide-react";
 
 type NavItem = {
   title: string;
@@ -82,6 +76,12 @@ const navSections: Array<{
         description: "Manage personal details",
         path: "/profile",
         icon: UserRound,
+      },
+      {
+        title: "Settings",
+        description: "Preferences, theme, danger zone",
+        path: "/settings",
+        icon: Settings2,
       },
     ],
   },

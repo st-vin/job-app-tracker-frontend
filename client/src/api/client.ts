@@ -182,6 +182,11 @@ export const usersApi = {
   update: (id: number, data: Partial<User>): Promise<User> =>
     apiClient.put(`/api/users/${id}`, data).then((res) => res.data),
 
+  changePassword: (
+    id: number,
+    data: { currentPassword: string; newPassword: string }
+  ): Promise<void> => apiClient.post(`/api/users/${id}/password`, data).then((res) => res.data),
+
   delete: (id: number): Promise<void> =>
     apiClient.delete(`/api/users/${id}`).then((res) => res.data),
 };

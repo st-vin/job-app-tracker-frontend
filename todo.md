@@ -25,18 +25,18 @@
 - [x] Build ApplicationsListPage with grid and Kanban views
 - [x] Implement search functionality with debouncing
 - [x] Implement filter panel (status, salary range)
-- [ ] Build ApplicationDetailPage with tabs (Overview, Reminders, Notes)
-- [ ] Build AddApplicationPage with form validation
-- [ ] Build EditApplicationPage with pre-population
+- [x] Build ApplicationDetailPage with tabs (Overview, Reminders, Notes)
+- [x] Build AddApplicationPage with form validation
+- [x] Build EditApplicationPage with pre-population
 - [x] Implement Reminders Tab with CRUD operations
-- [ ] Implement Interview Notes Tab with timeline format
+- [x] Implement Interview Notes Tab with timeline format
 - [x] Build RemindersListPage (global view)
 
 ## Phase 5: User Profile & Settings
 - [x] Build ProfilePage with user info display
-- [ ] Build EditProfilePage with form and password change
-- [ ] Build SettingsPage with preferences and theme toggle
-- [ ] Implement account deletion with multi-step confirmation
+- [x] Build EditProfilePage with form and password change
+- [x] Build SettingsPage with preferences and theme toggle
+- [x] Implement account deletion with multi-step confirmation
 
 ## Phase 6: Advanced Features
 - [ ] Create FilterContext for global filter state
