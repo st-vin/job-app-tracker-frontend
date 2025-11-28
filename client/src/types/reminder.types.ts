@@ -5,7 +5,7 @@ import type { Application } from "./application.types";
 export interface Reminder {
   id: number;
   applicationId: number;
-  message: string;
+  reminderMessage: string;
   reminderDate: string; // ISO 8601 datetime
   sent: boolean;
   createdAt: string;
@@ -14,12 +14,12 @@ export interface Reminder {
 }
 
 export interface CreateReminderRequest {
-  message: string;
+  reminderMessage: string;
   reminderDate: string; // ISO 8601 datetime
 }
 
 export interface UpdateReminderRequest {
-  message?: string;
+  reminderMessage?: string;
   reminderDate?: string;
   sent?: boolean;
 }

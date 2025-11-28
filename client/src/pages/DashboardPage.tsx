@@ -181,7 +181,7 @@ export default function DashboardPage() {
             <div className="space-y-3">
               {upcomingReminders.map((reminder) => (
                 <div key={reminder.id} className="p-3 bg-muted rounded-lg">
-                  <p className="text-sm font-medium">{reminder.message}</p>
+                  <p className="text-sm font-medium">{reminder.reminderMessage}</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {new Date(reminder.reminderDate).toLocaleDateString()}
                   </p>

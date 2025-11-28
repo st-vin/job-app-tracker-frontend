@@ -20,7 +20,7 @@
 - [x] Implement token persistence in localStorage
 
 ## Phase 4: Core Application Pages
-- [ ] Build DashboardPage with KPI cards and charts
+- [x] Build DashboardPage with KPI cards and charts
 - [x] Build ApplicationsListPage with table view
 - [x] Build ApplicationsListPage with grid and Kanban views
 - [x] Implement search functionality with debouncing
@@ -28,9 +28,9 @@
 - [ ] Build ApplicationDetailPage with tabs (Overview, Reminders, Notes)
 - [ ] Build AddApplicationPage with form validation
 - [ ] Build EditApplicationPage with pre-population
-- [ ] Implement Reminders Tab with CRUD operations
+- [x] Implement Reminders Tab with CRUD operations
 - [ ] Implement Interview Notes Tab with timeline format
-- [ ] Build RemindersListPage (global view)
+- [x] Build RemindersListPage (global view)
 
 ## Phase 5: User Profile & Settings
 - [x] Build ProfilePage with user info display

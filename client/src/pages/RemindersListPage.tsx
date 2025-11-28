@@ -81,7 +81,7 @@ export default function RemindersListPage() {
   const openEditDialog = (reminder: Reminder) => {
     setEditingReminder(reminder);
     setSelectedApplicationId(reminder.applicationId.toString());
-    setMessage(reminder.message);
+    setMessage(reminder.reminderMessage);
     setDateTime(formatInputValue(reminder.reminderDate));
     setIsDialogOpen(true);
   };
@@ -94,7 +94,7 @@ export default function RemindersListPage() {
   const createMutation = useMutation({
     mutationFn: () =>
       remindersApi.create(Number(selectedApplicationId), {
-        message,
+        reminderMessage: message,
         reminderDate: normalizeDateValue(dateTime),
       }),
     onSuccess: () => {
@@ -108,7 +108,7 @@ export default function RemindersListPage() {
   const updateMutation = useMutation({
     mutationFn: () =>
       remindersApi.update(editingReminder!.id, {
-        message,
+        reminderMessage: message,
         reminderDate: normalizeDateValue(dateTime),
       }),
     onSuccess: () => {
@@ -152,7 +152,7 @@ export default function RemindersListPage() {
         ? reminder.application.companyName
         : applications?.find(app => app.id === reminder.applicationId)?.companyName;
 
-      const haystack = `${reminder.message} ${application ?? ""}`.toLowerCase();
+      const haystack = `${reminder.reminderMessage} ${application ?? ""}`.toLowerCase();
       const matchesSearch = haystack.includes(searchQuery.toLowerCase());
 
       return matchesStatus && matchesSearch;
@@ -215,7 +215,7 @@ export default function RemindersListPage() {
                 </button>
               )}
             </div>
-            <p className="text-base font-semibold">{reminder.message}</p>
+            <p className="text-base font-semibold">{reminder.reminderMessage}</p>
             <p className="text-sm text-muted-foreground">
               {format(new Date(reminder.reminderDate), "EEEE, MMM d • h:mma")} ·{" "}
               {formatDistanceToNow(new Date(reminder.reminderDate), { addSuffix: true })}

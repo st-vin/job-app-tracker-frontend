@@ -195,7 +195,7 @@ export default function ApplicationDetailPage() {
   const openReminderDialog = (reminder?: Reminder) => {
     if (reminder) {
       setEditingReminder(reminder);
-      setReminderMessage(reminder.message);
+      setReminderMessage(reminder.reminderMessage);
       setReminderDate(formatReminderInputValue(reminder.reminderDate));
     } else {
       resetReminderForm();
@@ -272,7 +272,7 @@ export default function ApplicationDetailPage() {
     }
 
     const payload = {
-      message: reminderMessage,
+      reminderMessage,
       reminderDate: normalizeReminderDate(reminderDate),
     };
 
@@ -583,7 +583,7 @@ export default function ApplicationDetailPage() {
                               </Badge>
                             )}
                           </div>
-                          <p className="font-medium">{reminder.message}</p>
+                          <p className="font-medium">{reminder.reminderMessage}</p>
                           <p className="text-sm text-muted-foreground">
                             {format(date, "EEEE, MMM d • h:mma")} &middot; {diffLabel}
                           </p>
