@@ -22,6 +22,7 @@ const EditProfilePage = lazy(() => import('./pages/EditProfilePage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const RemindersListPage = lazy(() => import('./pages/RemindersListPage'));
+const CalendarPage = lazy(() => import('./pages/CalendarPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 const queryClient = new QueryClient({
@@ -92,6 +93,14 @@ function Router() {
         element={
           <ProtectedRoute>
             <RemindersListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/calendar"
+        element={
+          <ProtectedRoute>
+            <CalendarPage />
           </ProtectedRoute>
         }
       />

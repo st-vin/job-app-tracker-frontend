@@ -14,7 +14,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { APP_LOGO, APP_TITLE } from "@/const";
-import { AlarmClock, LayoutDashboard, ListChecks, PlusCircle, Settings2, UserRound } from "lucide-react";
+import { AlarmClock, CalendarDays, LayoutDashboard, ListChecks, PlusCircle, Settings2, UserRound } from "lucide-react";
 
 type NavItem = {
   title: string;
@@ -66,6 +66,12 @@ const navSections: Array<{
         path: "/reminders",
         icon: AlarmClock,
       },
+          {
+            title: "Calendar",
+            description: "Month view of reminders & apps",
+            path: "/calendar",
+            icon: CalendarDays,
+          },
     ],
   },
   {
