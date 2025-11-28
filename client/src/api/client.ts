@@ -18,7 +18,7 @@ import {
   PaginatedApplications,
   ApplicationSearchResult,
 } from '../types/application.types';
-import { Reminder, CreateReminderRequest } from '../types/reminder.types';
+import { Reminder, CreateReminderRequest, UpdateReminderRequest } from '../types/reminder.types';
 import { InterviewNote, CreateNoteRequest } from '../types/note.types';
 
 const API_BASE_URL = 'http://localhost:8080';
@@ -146,6 +146,9 @@ export const remindersApi = {
 
   create: (applicationId: number, data: CreateReminderRequest): Promise<Reminder> =>
     apiClient.post(`/api/reminders/application/${applicationId}`, data).then((res) => res.data),
+
+  update: (id: number, data: UpdateReminderRequest): Promise<Reminder> =>
+    apiClient.put(`/api/reminders/${id}`, data).then((res) => res.data),
 
   delete: (id: number): Promise<void> =>
     apiClient.delete(`/api/reminders/${id}`).then((res) => res.data),

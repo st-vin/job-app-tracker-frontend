@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { APP_LOGO, APP_TITLE } from "@/const";
 import {
+  AlarmClock,
   LayoutDashboard,
   ListChecks,
   PlusCircle,
@@ -59,6 +60,17 @@ const navSections: Array<{
         description: "Create a new job record",
         path: "/applications/new",
         icon: PlusCircle,
+      },
+    ],
+  },
+  {
+    title: "Follow-ups",
+    items: [
+      {
+        title: "Reminders",
+        description: "Global view of upcoming follow-ups",
+        path: "/reminders",
+        icon: AlarmClock,
       },
     ],
   },

@@ -49,6 +49,7 @@ import {
   Award,
   Handshake,
   MoreHorizontal,
+  Loader2,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { applicationsApi, remindersApi, notesApi } from "../api/client";
@@ -144,6 +145,7 @@ export default function ApplicationDetailPage() {
   const [reminderDate, setReminderDate] = useState('');
   const [noteContent, setNoteContent] = useState('');
   const [noteStage, setNoteStage] = useState<InterviewStage>('PHONE_SCREEN');
+  const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
 
   const appId = parseInt(id || "0");
 
@@ -178,13 +180,45 @@ export default function ApplicationDetailPage() {
     );
   }, [notes]);
 
+  const formatReminderInputValue = (value: string) =>
+    value ? format(new Date(value), "yyyy-MM-dd'T'HH:mm") : "";
+
+  const normalizeReminderDate = (value: string) =>
+    value ? new Date(value).toISOString() : "";
+
+  const resetReminderForm = () => {
+    setReminderMessage("");
+    setReminderDate("");
+    setEditingReminder(null);
+  };
+
+  const openReminderDialog = (reminder?: Reminder) => {
+    if (reminder) {
+      setEditingReminder(reminder);
+      setReminderMessage(reminder.message);
+      setReminderDate(formatReminderInputValue(reminder.reminderDate));
+    } else {
+      resetReminderForm();
+    }
+    setShowReminderDialog(true);
+  };
+
+  const handleReminderDialogChange = (open: boolean) => {
+    setShowReminderDialog(open);
+    if (!open) {
+      resetReminderForm();
+    }
+  };
+
   const describeReminder = (reminder: Reminder) => {
     const date = new Date(reminder.reminderDate);
     const isPast = date.getTime() < Date.now();
     const diffLabel = formatDistanceToNow(date, { addSuffix: true });
-    let tone: "overdue" | "soon" | "upcoming" = "upcoming";
+    let tone: "overdue" | "soon" | "upcoming" | "completed" = "upcoming";
 
-    if (isPast) {
+    if (reminder.sent) {
+      tone = "completed";
+    } else if (isPast) {
       tone = "overdue";
     } else if (date.getTime() - Date.now() < 1000 * 60 * 60 * 24 * 2) {
       tone = "soon";
@@ -194,20 +228,60 @@ export default function ApplicationDetailPage() {
   };
 
   const createReminderMutation = useMutation({
-    mutationFn: () =>
-      remindersApi.create(appId, {
-        message: reminderMessage,
-        reminderDate,
-      }),
+    mutationFn: (data: { message: string; reminderDate: string }) =>
+      remindersApi.create(appId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reminders', appId] });
-      setReminderMessage('');
-      setReminderDate('');
+      queryClient.invalidateQueries({ queryKey: ["reminders", appId] });
+      resetReminderForm();
       setShowReminderDialog(false);
-      toast.success('Reminder created');
+      toast.success("Reminder created");
     },
-    onError: () => toast.error('Failed to create reminder'),
+    onError: () => toast.error("Failed to create reminder"),
   });
+
+  const updateReminderMutation = useMutation({
+    mutationFn: ({
+      reminderId,
+      data,
+    }: {
+      reminderId: number;
+      data: { message?: string; reminderDate?: string; sent?: boolean };
+    }) => remindersApi.update(reminderId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reminders", appId] });
+      resetReminderForm();
+      setShowReminderDialog(false);
+      toast.success("Reminder updated");
+    },
+    onError: () => toast.error("Failed to update reminder"),
+  });
+
+  const toggleReminderSentMutation = useMutation({
+    mutationFn: (reminder: Reminder) =>
+      remindersApi.update(reminder.id, { sent: !reminder.sent }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reminders", appId] });
+    },
+    onError: () => toast.error("Failed to update reminder"),
+  });
+
+  const handleReminderSubmit = () => {
+    if (!reminderMessage || !reminderDate) {
+      toast.error("Please complete the reminder form");
+      return;
+    }
+
+    const payload = {
+      message: reminderMessage,
+      reminderDate: normalizeReminderDate(reminderDate),
+    };
+
+    if (editingReminder) {
+      updateReminderMutation.mutate({ reminderId: editingReminder.id, data: payload });
+    } else {
+      createReminderMutation.mutate(payload);
+    }
+  };
 
   const deleteReminderMutation = useMutation({
     mutationFn: (reminderId: number) => remindersApi.delete(reminderId),
@@ -399,21 +473,23 @@ export default function ApplicationDetailPage() {
         <TabsContent value="reminders" className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-            <h3 className="font-semibold">Reminders</h3>
+              <h3 className="font-semibold">Reminders</h3>
               <p className="text-sm text-muted-foreground">
                 Stay on top of follow-ups with smart due labels.
               </p>
             </div>
-            <Dialog open={showReminderDialog} onOpenChange={setShowReminderDialog}>
+            <Dialog open={showReminderDialog} onOpenChange={handleReminderDialogChange}>
               <DialogTrigger asChild>
-                <Button size="sm" className="gap-2">
+                <Button size="sm" className="gap-2" onClick={() => openReminderDialog()}>
                   <Plus className="h-4 w-4" />
                   Add Reminder
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Create Reminder</DialogTitle>
+                  <DialogTitle>
+                    {editingReminder ? "Edit Reminder" : "Create Reminder"}
+                  </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
@@ -437,15 +513,19 @@ export default function ApplicationDetailPage() {
                     />
                   </div>
                   <Button
-                    onClick={() => createReminderMutation.mutate()}
+                    onClick={handleReminderSubmit}
                     disabled={
-                      createReminderMutation.isPending ||
+                      (createReminderMutation.isPending ||
+                        updateReminderMutation.isPending) ||
                       !reminderMessage ||
                       !reminderDate
                     }
-                    className="w-full"
+                    className="w-full gap-2"
                   >
-                    Create Reminder
+                    {(createReminderMutation.isPending || updateReminderMutation.isPending) && (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    )}
+                    {editingReminder ? "Save Changes" : "Create Reminder"}
                   </Button>
                 </div>
               </DialogContent>
@@ -458,13 +538,11 @@ export default function ApplicationDetailPage() {
                 const { date, diffLabel, tone } = describeReminder(reminder);
                 return (
                   <div key={reminder.id} className="relative pl-10">
-                    <div
-                      className="bg-border absolute left-4 top-0 h-full w-px"
-                      aria-hidden
-                    />
+                    <div className="bg-border absolute left-4 top-0 h-full w-px" aria-hidden />
                     <span
                       className={cn(
                         "absolute left-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border-2 bg-background",
+                        tone === "completed" && "border-muted-foreground text-muted-foreground",
                         tone === "overdue" && "border-destructive text-destructive",
                         tone === "soon" && "border-amber-500 text-amber-500",
                         tone === "upcoming" && "border-primary text-primary",
@@ -479,11 +557,12 @@ export default function ApplicationDetailPage() {
                     <Card className="p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="space-y-2">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <Badge
                               variant="secondary"
                               className={cn(
                                 "font-medium",
+                                tone === "completed" && "bg-muted text-muted-foreground",
                                 tone === "overdue" && "bg-destructive/15 text-destructive",
                                 tone === "soon" && "bg-amber-500/15 text-amber-700",
                                 tone === "upcoming" && "bg-primary/10 text-primary",
@@ -493,7 +572,9 @@ export default function ApplicationDetailPage() {
                                 ? "Overdue"
                                 : tone === "soon"
                                   ? "Due soon"
-                                  : "Upcoming"}
+                                  : tone === "completed"
+                                    ? "Completed"
+                                    : "Upcoming"}
                             </Badge>
                             {reminder.sent && (
                               <Badge variant="outline" className="gap-1">
@@ -502,22 +583,48 @@ export default function ApplicationDetailPage() {
                               </Badge>
                             )}
                           </div>
-                      <p className="font-medium">{reminder.message}</p>
+                          <p className="font-medium">{reminder.message}</p>
                           <p className="text-sm text-muted-foreground">
                             {format(date, "EEEE, MMM d • h:mma")} &middot; {diffLabel}
-                      </p>
-                    </div>
-                    <Button
-                          size="icon"
-                      variant="ghost"
-                      onClick={() => deleteReminderMutation.mutate(reminder.id)}
-                      disabled={deleteReminderMutation.isPending}
-                    >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                          <span className="sr-only">Delete reminder</span>
-                    </Button>
-                  </div>
-                </Card>
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => toggleReminderSentMutation.mutate(reminder)}
+                            title={reminder.sent ? "Mark as pending" : "Mark as complete"}
+                          >
+                            <CheckCircle2
+                              className={cn(
+                                "h-4 w-4",
+                                reminder.sent
+                                  ? "text-muted-foreground"
+                                  : "text-emerald-600",
+                              )}
+                            />
+                            <span className="sr-only">Toggle reminder status</span>
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => openReminderDialog(reminder)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                            <span className="sr-only">Edit reminder</span>
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => deleteReminderMutation.mutate(reminder.id)}
+                            disabled={deleteReminderMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                            <span className="sr-only">Delete reminder</span>
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
                   </div>
                 );
               })}
