@@ -1,0 +1,1396 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<frontend_api_specification>
+  <application>
+    <name>Job Application Tracker</name>
+    <description>REST API integration specification for React frontend - managing job applications, reminders, interview notes, and user profiles</description>
+    <base_url>http://localhost:8080</base_url>
+    <api_version>v1</api_version>
+  </application>
+
+  <!-- ========================================
+       WORKFLOW 1: AUTHENTICATION & ONBOARDING
+       ======================================== -->
+  <workflow name="authentication_and_onboarding">
+    <description>User registration, email verification, and login flow</description>
+    <react_pages>RegisterPage, VerifyEmailPage, LoginPage</react_pages>
+    
+    <group name="user_registration">
+      <endpoint>
+        <name>Register New User</name>
+        <method>POST</method>
+        <path>/api/users/register</path>
+        <auth_required>false</auth_required>
+        <used_in_component>RegisterPage</used_in_component>
+        <description>Create new user account with email verification token generation</description>
+        
+        <request>
+          <content_type>application/json</content_type>
+          <body>
+            <field name="firstName" type="string" required="true" min_length="2" max_length="50"/>
+            <field name="lastName" type="string" required="true" min_length="2" max_length="50"/>
+            <field name="email" type="string" required="true" format="email"/>
+            <field name="password" type="string" required="true" min_length="8"/>
+            <field name="role" type="enum" required="true" values="USER,ADMIN" default="USER"/>
+          </body>
+        </request>
+        
+        <response status="200">
+          <field name="id" type="integer"/>
+          <field name="firstName" type="string"/>
+          <field name="lastName" type="string"/>
+          <field name="email" type="string"/>
+          <field name="createdAt" type="datetime"/>
+        </response>
+        
+        <react_notes>
+          After successful registration, redirect to VerifyEmailPage with message to check email.
+          Store email temporarily for resend verification feature.
+        </react_notes>
+      </endpoint>
+
+      <endpoint>
+        <name>Check Email Exists</name>
+        <method>GET</method>
+        <path>/api/users/exists</path>
+        <auth_required>false</auth_required>
+        <used_in_component>RegisterPage (validation)</used_in_component>
+        <description>Check if email is already registered before form submission</description>
+        
+        <request>
+          <query_params>
+            <param name="email" type="string" required="true"/>
+          </query_params>
+        </request>
+        
+        <response status="200">
+          <field name="exists" type="boolean"/>
+        </response>
+        
+        <react_notes>
+          Call during form validation (debounced) to show real-time feedback.
+          Display error message if email already exists.
+        </react_notes>
+      </endpoint>
+    </group>
+
+    <group name="email_verification">
+      <endpoint>
+        <name>Verify Email</name>
+        <method>GET</method>
+        <path>/api/auth/verify</path>
+        <auth_required>false</auth_required>
+        <used_in_component>VerifyEmailPage</used_in_component>
+        <description>Verify user email using token from verification email link</description>
+        
+        <request>
+          <query_params>
+            <param name="token" type="string" required="true"/>
+          </query_params>
+        </request>
+        
+        <response status="200">
+          <field name="message" type="string"/>
+          <field name="success" type="boolean"/>
+        </response>
+        
+        <react_notes>
+          Extract token from URL query parameter on component mount.
+          Show success message and redirect to LoginPage after 3 seconds.
+          Handle expired/invalid token errors with option to resend.
+        </react_notes>
+      </endpoint>
+
+      <endpoint>
+        <name>Resend Verification Email</name>
+        <method>POST</method>
+        <path>/api/auth/resend-verification</path>
+        <auth_required>false</auth_required>
+        <used_in_component>VerifyEmailPage, RegisterPage</used_in_component>
+        <description>Resend verification email if user didn't receive it or token expired</description>
+        
+        <request>
+          <query_params>
+            <param name="email" type="string" required="true"/>
+          </query_params>
+        </request>
+        
+        <response status="200">
+          <field name="message" type="string"/>
+        </response>
+        
+        <react_notes>
+          Show rate-limiting message (e.g., "Wait 60 seconds before resending").
+          Display success toast notification when email sent.
+        </react_notes>
+      </endpoint>
+    </group>
+
+    <group name="login">
+      <endpoint>
+        <name>User Login</name>
+        <method>POST</method>
+        <path>/api/auth/login</path>
+        <auth_required>false</auth_required>
+        <used_in_component>LoginPage</used_in_component>
+        <description>Authenticate user and receive JWT token</description>
+        
+        <request>
+          <content_type>application/json</content_type>
+          <body>
+            <field name="email" type="string" required="true"/>
+            <field name="password" type="string" required="true"/>
+          </body>
+        </request>
+        
+        <response status="200">
+          <field name="token" type="string" description="JWT bearer token"/>
+          <field name="type" type="string" default="Bearer"/>
+          <field name="user" type="object">
+            <field name="id" type="integer"/>
+            <field name="firstName" type="string"/>
+            <field name="lastName" type="string"/>
+            <field name="email" type="string"/>
+            <field name="createdAt" type="datetime"/>
+          </field>
+        </response>
+        
+        <react_notes>
+          Store token in localStorage/sessionStorage and user object in React Context/Redux.
+          Set Authorization header for all subsequent API calls: "Bearer {token}".
+          Redirect to DashboardPage after successful login.
+          Handle 401 errors (invalid credentials) with user-friendly messages.
+          Check if email is verified before allowing login.
+        </react_notes>
+      </endpoint>
+    </group>
+  </workflow>
+
+  <!-- ========================================
+       WORKFLOW 2: DASHBOARD & OVERVIEW
+       ======================================== -->
+  <workflow name="dashboard_overview">
+    <description>Main dashboard with statistics and application overview</description>
+    <react_pages>DashboardPage</react_pages>
+    
+    <group name="dashboard_stats">
+      <endpoint>
+        <name>Get Dashboard Statistics</name>
+        <method>GET</method>
+        <path>/api/dashboard/stats</path>
+        <auth_required>true</auth_required>
+        <used_in_component>DashboardPage, StatsCards</used_in_component>
+        <description>Fetch aggregated statistics for current user's applications</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+        </request>
+        
+        <response status="200">
+          <field name="totalApplications" type="integer"/>
+          <field name="byStatus" type="object" description="Count by each status">
+            <field name="APPLIED" type="integer"/>
+            <field name="PHONE_SCREEN" type="integer"/>
+            <field name="TECHNICAL" type="integer"/>
+            <field name="ONSITE" type="integer"/>
+            <field name="OFFER" type="integer"/>
+            <field name="REJECTED" type="integer"/>
+            <field name="INTERVIEW" type="integer"/>
+            <field name="WITHDRAWN" type="integer"/>
+          </field>
+          <field name="averageSalary" type="number" format="double"/>
+          <field name="last30DaysSubmissions" type="integer"/>
+        </response>
+        
+        <react_notes>
+          Load on dashboard mount and cache for 5 minutes.
+          Display in KPI cards at top of dashboard.
+          Use byStatus data for pie/donut chart visualization.
+          Show trend indicator for last30DaysSubmissions.
+          Refresh after any application CRUD operation.
+        </react_notes>
+      </endpoint>
+    </group>
+  </workflow>
+
+  <!-- ========================================
+       WORKFLOW 3: APPLICATION MANAGEMENT
+       ======================================== -->
+  <workflow name="application_management">
+    <description>Core CRUD operations for job applications</description>
+    <react_pages>ApplicationsListPage, ApplicationDetailPage, AddApplicationPage, EditApplicationPage</react_pages>
+    
+    <group name="list_applications">
+      <endpoint>
+        <name>Get All My Applications</name>
+        <method>GET</method>
+        <path>/api/applications/me</path>
+        <auth_required>true</auth_required>
+        <used_in_component>ApplicationsListPage</used_in_component>
+        <description>Fetch all applications for current authenticated user</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+        </request>
+        
+        <response status="200" type="array">
+          <item type="object">
+            <field name="id" type="integer"/>
+            <field name="companyName" type="string"/>
+            <field name="position" type="string"/>
+            <field name="status" type="enum" values="APPLIED,PHONE_SCREEN,TECHNICAL,ONSITE,OFFER,REJECTED,INTERVIEW,WITHDRAWN"/>
+            <field name="appliedDate" type="date"/>
+            <field name="salary" type="number"/>
+            <field name="jobBoardSource" type="string"/>
+            <field name="jobUrl" type="string"/>
+            <field name="notes" type="string"/>
+            <field name="createdAt" type="datetime"/>
+            <field name="updatedAt" type="datetime"/>
+            <field name="user" type="object">
+              <field name="id" type="integer"/>
+              <field name="firstName" type="string"/>
+              <field name="lastName" type="string"/>
+            </field>
+            <field name="reminderCount" type="integer"/>
+            <field name="interviewNoteCount" type="integer"/>
+            <field name="statusHistoryCount" type="integer"/>
+          </item>
+        </response>
+        
+        <react_notes>
+          Primary data source for applications list view.
+          Store in local state or global state management.
+          Sort client-side by appliedDate (most recent first) by default.
+          Show status badge with color coding.
+          Display counts as badges/pills for reminders and notes.
+        </react_notes>
+      </endpoint>
+
+      <endpoint>
+        <name>Get My Applications (Paginated)</name>
+        <method>GET</method>
+        <path>/api/applications/me/paginated</path>
+        <auth_required>true</auth_required>
+        <used_in_component>ApplicationsListPage (infinite scroll)</used_in_component>
+        <description>Fetch applications with pagination for better performance with large datasets</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <query_params>
+            <param name="page" type="integer" default="0" description="Zero-based page number"/>
+            <param name="size" type="integer" default="10" description="Items per page"/>
+          </query_params>
+        </request>
+        
+        <response status="200">
+          <field name="totalElements" type="integer"/>
+          <field name="totalPages" type="integer"/>
+          <field name="size" type="integer"/>
+          <field name="number" type="integer" description="Current page number"/>
+          <field name="numberOfElements" type="integer"/>
+          <field name="first" type="boolean"/>
+          <field name="last" type="boolean"/>
+          <field name="content" type="array" description="Application items"/>
+          <field name="empty" type="boolean"/>
+        </response>
+        
+        <react_notes>
+          Use for infinite scroll or pagination UI patterns.
+          Increment page parameter on scroll/button click.
+          Append new content to existing list for infinite scroll.
+          Show loading skeleton while fetching.
+          Use totalPages and number for pagination controls.
+        </react_notes>
+      </endpoint>
+    </group>
+
+    <group name="create_application">
+      <endpoint>
+        <name>Create New Application</name>
+        <method>POST</method>
+        <path>/api/applications</path>
+        <auth_required>true</auth_required>
+        <used_in_component>AddApplicationPage, QuickAddModal</used_in_component>
+        <description>Submit new job application to track</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <content_type>application/json</content_type>
+          <body>
+            <field name="companyName" type="string" required="true"/>
+            <field name="position" type="string" required="true"/>
+            <field name="status" type="enum" required="true" values="APPLIED,PHONE_SCREEN,TECHNICAL,ONSITE,OFFER,REJECTED,INTERVIEW,WITHDRAWN" default="APPLIED"/>
+            <field name="appliedDate" type="date" required="true" default="today"/>
+            <field name="salary" type="number" format="double"/>
+            <field name="jobBoardSource" type="string" description="e.g., LinkedIn, Indeed, Company Website"/>
+            <field name="jobUrl" type="string" format="url"/>
+            <field name="notes" type="string"/>
+          </body>
+        </request>
+        
+        <response status="200">
+          <field name="id" type="integer"/>
+          <field name="companyName" type="string"/>
+          <field name="position" type="string"/>
+          <field name="status" type="enum"/>
+          <field name="appliedDate" type="date"/>
+          <field name="salary" type="number"/>
+          <field name="jobBoardSource" type="string"/>
+          <field name="jobUrl" type="string"/>
+          <field name="notes" type="string"/>
+          <field name="createdAt" type="datetime"/>
+          <field name="updatedAt" type="datetime"/>
+          <field name="user" type="object"/>
+          <field name="reminderCount" type="integer"/>
+          <field name="interviewNoteCount" type="integer"/>
+          <field name="statusHistoryCount" type="integer"/>
+        </response>
+        
+        <react_notes>
+          Form validation: companyName and position are required.
+          Default appliedDate to current date.
+          Show toast notification on success.
+          Redirect to ApplicationDetailPage with new ID or back to list.
+          Invalidate/refresh applications list cache.
+          Optional: Parse job posting URL to auto-fill company name.
+        </react_notes>
+      </endpoint>
+    </group>
+
+    <group name="view_application">
+      <endpoint>
+        <name>Get Application by ID</name>
+        <method>GET</method>
+        <path>/api/applications/{id}</path>
+        <auth_required>true</auth_required>
+        <used_in_component>ApplicationDetailPage</used_in_component>
+        <description>Fetch full details of a specific application</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <path_params>
+            <param name="id" type="integer" required="true"/>
+          </path_params>
+        </request>
+        
+        <response status="200">
+          <field name="id" type="integer"/>
+          <field name="companyName" type="string"/>
+          <field name="position" type="string"/>
+          <field name="status" type="enum"/>
+          <field name="appliedDate" type="date"/>
+          <field name="salary" type="number"/>
+          <field name="jobBoardSource" type="string"/>
+          <field name="jobUrl" type="string"/>
+          <field name="notes" type="string"/>
+          <field name="createdAt" type="datetime"/>
+          <field name="updatedAt" type="datetime"/>
+          <field name="user" type="object"/>
+          <field name="reminderCount" type="integer"/>
+          <field name="interviewNoteCount" type="integer"/>
+          <field name="statusHistoryCount" type="integer"/>
+        </response>
+        
+        <react_notes>
+          Load on ApplicationDetailPage mount using ID from URL params.
+          Display in read-only view with edit button.
+          Show counts and provide links to view reminders/notes/history.
+          Handle 404 error if application not found or unauthorized.
+        </react_notes>
+      </endpoint>
+    </group>
+
+    <group name="update_application">
+      <endpoint>
+        <name>Update Application</name>
+        <method>PUT</method>
+        <path>/api/applications/{id}</path>
+        <auth_required>true</auth_required>
+        <used_in_component>EditApplicationPage, ApplicationDetailPage</used_in_component>
+        <description>Update full application details</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <path_params>
+            <param name="id" type="integer" required="true"/>
+          </path_params>
+          <content_type>application/json</content_type>
+          <body>
+            <field name="companyName" type="string" required="true"/>
+            <field name="position" type="string" required="true"/>
+            <field name="status" type="enum" required="true"/>
+            <field name="appliedDate" type="date" required="true"/>
+            <field name="salary" type="number"/>
+            <field name="jobBoardSource" type="string"/>
+            <field name="jobUrl" type="string"/>
+            <field name="notes" type="string"/>
+          </body>
+        </request>
+        
+        <response status="200">
+          <field name="id" type="integer"/>
+          <field name="companyName" type="string"/>
+          <field name="position" type="string"/>
+          <field name="status" type="enum"/>
+          <field name="appliedDate" type="date"/>
+          <field name="salary" type="number"/>
+          <field name="jobBoardSource" type="string"/>
+          <field name="jobUrl" type="string"/>
+          <field name="notes" type="string"/>
+          <field name="createdAt" type="datetime"/>
+          <field name="updatedAt" type="datetime"/>
+          <field name="user" type="object"/>
+          <field name="reminderCount" type="integer"/>
+          <field name="interviewNoteCount" type="integer"/>
+          <field name="statusHistoryCount" type="integer"/>
+        </response>
+        
+        <react_notes>
+          Pre-populate form with existing data from GET endpoint.
+          Show confirmation before status changes (creates status history).
+          Update local cache/state with new data.
+          Show toast notification on success.
+          Redirect back to detail view after save.
+        </react_notes>
+      </endpoint>
+
+      <endpoint>
+        <name>Update Application Status Only</name>
+        <method>PATCH</method>
+        <path>/api/applications/{id}/status</path>
+        <auth_required>true</auth_required>
+        <used_in_component>ApplicationDetailPage, ApplicationsListPage (quick status change)</used_in_component>
+        <description>Quick status update without modifying other fields - creates status history entry</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <path_params>
+            <param name="id" type="integer" required="true"/>
+          </path_params>
+          <query_params>
+            <param name="status" type="enum" required="true" values="APPLIED,PHONE_SCREEN,TECHNICAL,ONSITE,OFFER,REJECTED,INTERVIEW,WITHDRAWN"/>
+          </query_params>
+        </request>
+        
+        <response status="200">
+          <field name="id" type="integer"/>
+          <field name="companyName" type="string"/>
+          <field name="position" type="string"/>
+          <field name="status" type="enum"/>
+          <field name="appliedDate" type="date"/>
+          <field name="salary" type="number"/>
+          <field name="jobBoardSource" type="string"/>
+          <field name="jobUrl" type="string"/>
+          <field name="notes" type="string"/>
+          <field name="createdAt" type="datetime"/>
+          <field name="updatedAt" type="datetime"/>
+          <field name="user" type="object"/>
+          <field name="reminderCount" type="integer"/>
+          <field name="interviewNoteCount" type="integer"/>
+          <field name="statusHistoryCount" type="integer"/>
+        </response>
+        
+        <react_notes>
+          Use for status dropdown/select in list view for quick updates.
+          Show confirmation dialog for negative statuses (REJECTED, WITHDRAWN).
+          Optimistically update UI before API response.
+          Increment statusHistoryCount in local state.
+          Consider showing a brief animation or badge for status changes.
+        </react_notes>
+      </endpoint>
+    </group>
+
+    <group name="delete_application">
+      <endpoint>
+        <name>Delete Application</name>
+        <method>DELETE</method>
+        <path>/api/applications/{id}</path>
+        <auth_required>true</auth_required>
+        <used_in_component>ApplicationDetailPage, ApplicationsListPage</used_in_component>
+        <description>Permanently delete job application and all related data</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <path_params>
+            <param name="id" type="integer" required="true"/>
+          </path_params>
+        </request>
+        
+        <response status="200">
+          <description>Empty response or success message</description>
+        </response>
+        
+        <react_notes>
+          Show confirmation dialog before deletion (include company name and position).
+          Warn user that related reminders, notes, and status history will also be deleted.
+          Remove from local state/cache immediately after success.
+          Redirect to list page if on detail page.
+          Show success toast notification.
+          Refresh dashboard stats after deletion.
+        </react_notes>
+      </endpoint>
+    </group>
+
+    <group name="search_and_filter">
+      <endpoint>
+        <name>Search Applications</name>
+        <method>GET</method>
+        <path>/api/applications/search</path>
+        <auth_required>true</auth_required>
+        <used_in_component>ApplicationsListPage (search bar)</used_in_component>
+        <description>Search applications by keyword in company name, position, or notes</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <query_params>
+            <param name="keyword" type="string" required="true"/>
+          </query_params>
+        </request>
+        
+        <response status="200" type="array">
+          <description>Array of matching applications (same structure as list endpoint)</description>
+        </response>
+        
+        <react_notes>
+          Debounce input by 300-500ms before making API call.
+          Show loading indicator in search bar while searching.
+          Clear search and show all applications when input is empty.
+          Highlight matching text in search results.
+          Consider client-side filtering if already loaded all applications.
+        </react_notes>
+      </endpoint>
+
+      <endpoint>
+        <name>Filter Applications</name>
+        <method>GET</method>
+        <path>/api/applications/filter</path>
+        <auth_required>true</auth_required>
+        <used_in_component>ApplicationsListPage (filter sidebar/panel)</used_in_component>
+        <description>Filter applications by multiple criteria</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <query_params>
+            <param name="status" type="enum" values="APPLIED,PHONE_SCREEN,TECHNICAL,ONSITE,OFFER,REJECTED,INTERVIEW,WITHDRAWN"/>
+            <param name="minSalary" type="number" format="double"/>
+            <param name="maxSalary" type="number" format="double"/>
+            <param name="keyword" type="string"/>
+          </query_params>
+        </request>
+        
+        <response status="200" type="array">
+          <description>Array of filtered applications</description>
+        </response>
+        
+        <react_notes>
+          Build filter UI with checkboxes/multi-select for status.
+          Use slider or number inputs for salary range.
+          Combine with keyword search for comprehensive filtering.
+          Show active filter badges/chips that can be removed individually.
+          Display count of results matching filters.
+          Save filter preferences to localStorage for session persistence.
+        </react_notes>
+      </endpoint>
+
+      <endpoint>
+        <name>Get Applications by Status</name>
+        <method>GET</method>
+        <path>/api/applications/status/{status}</path>
+        <auth_required>true</auth_required>
+        <used_in_component>ApplicationsListPage (status tabs/kanban view)</used_in_component>
+        <description>Fetch all applications with a specific status</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <path_params>
+            <param name="status" type="enum" required="true" values="APPLIED,PHONE_SCREEN,TECHNICAL,ONSITE,OFFER,REJECTED,INTERVIEW,WITHDRAWN"/>
+          </path_params>
+        </request>
+        
+        <response status="200" type="array">
+          <description>Array of applications with specified status</description>
+        </response>
+        
+        <react_notes>
+          Use for kanban board view with columns per status.
+          Implement drag-and-drop to move applications between status columns.
+          On drop, call PATCH /api/applications/{id}/status endpoint.
+          Show empty state with helpful message if no applications in status.
+          Consider using this in combination with tab navigation.
+        </react_notes>
+      </endpoint>
+    </group>
+  </workflow>
+
+  <!-- ========================================
+       WORKFLOW 4: REMINDERS MANAGEMENT
+       ======================================== -->
+  <workflow name="reminders_management">
+    <description>Create and manage follow-up reminders for applications</description>
+    <react_pages>ApplicationDetailPage, RemindersListPage, ReminderModal</react_pages>
+    
+    <group name="view_reminders">
+      <endpoint>
+        <name>Get All My Reminders</name>
+        <method>GET</method>
+        <path>/api/reminders</path>
+        <auth_required>true</auth_required>
+        <used_in_component>RemindersListPage, DashboardPage (upcoming reminders widget)</used_in_component>
+        <description>Fetch all reminders for current user across all applications</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+        </request>
+        
+        <response status="200" type="array">
+          <item type="object">
+            <field name="id" type="integer"/>
+            <field name="application" type="object" description="Full application object"/>
+            <field name="reminderDate" type="datetime"/>
+            <field name="reminderMessage" type="string"/>
+            <field name="sent" type="boolean"/>
+          </item>
+        </response>
+        
+        <react_notes>
+          Sort by reminderDate (ascending - soonest first).
+          Group by date (Today, Tomorrow, This Week, Later).
+          Show badge/indicator for unsent reminders on dashboard.
+          Filter out sent reminders older than 7 days for cleaner view.
+          Link to associated application detail page.
+        </react_notes>
+      </endpoint>
+
+      <endpoint>
+        <name>Get Reminders for Application</name>
+        <method>GET</method>
+        <path>/api/reminders/application/{applicationId}</path>
+        <auth_required>true</auth_required>
+        <used_in_component>ApplicationDetailPage (reminders section)</used_in_component>
+        <description>Fetch all reminders associated with specific application</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <path_params>
+            <param name="applicationId" type="integer" required="true"/>
+          </path_params>
+        </request>
+        
+        <response status="200" type="array">
+          <item type="object">
+            <field name="id" type="integer"/>
+            <field name="application" type="object"/>
+            <field name="reminderDate" type="datetime"/>
+            <field name="reminderMessage" type="string"/>
+            <field name="sent" type="boolean"/>
+          </item>
+        </response>
+        
+        <react_notes>
+          Display in chronological order in application detail sidebar/panel.
+          Show visual indicator (icon/color) for past due reminders.
+          Grey out or mark sent reminders.
+          Show "Add Reminder" button prominently.
+        </react_notes>
+      </endpoint>
+    </group>
+
+    <group name="create_reminder">
+      <endpoint>
+        <name>Create Reminder for Application</name>
+        <method>POST</method>
+        <path>/api/reminders/application/{applicationId}</path>
+        <auth_required>true</auth_required>
+        <used_in_component>ReminderModal, ApplicationDetailPage</used_in_component>
+        <description>Add new reminder to follow up on application</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <path_params>
+            <param name="applicationId" type="integer" required="true"/>
+          </path_params>
+          <content_type>application/json</content_type>
+          <body>
+            <field name="reminderDate" type="datetime" required="true"/>
+            <field name="reminderMessage" type="string" required="true"/>
+          </body>
+        </request>
+        
+        <response status="200">
+          <field name="id" type="integer"/>
+          <field name="application" type="object"/>
+          <field name="reminderDate" type="datetime"/>
+          <field name="reminderMessage" type="string"/>
+          <field name="sent" type="boolean" default="false"/>
+        </response>
+        
+        <react_notes>
+          Use datetime picker for reminderDate (future dates only).
+          Provide quick preset options (Tomorrow, 3 days, 1 week, 2 weeks).
+          Validate reminderDate is not in the past.
+          Suggest message templates ("Follow up on application", "Check application status").
+          Show success toast and close modal after creation.
+          Increment reminderCount in application detail view.
+        </react_notes>
+      </endpoint>
+    </group>
+
+    <group name="delete_reminder">
+      <endpoint>
+        <name>Delete Reminder</name>
+        <method>DELETE</method>
+        <path>/api/reminders/{id}</path>
+        <auth_required>true</auth_required>
+        <used_in_component>ApplicationDetailPage, RemindersListPage</used_in_component>
+        <description>Remove a reminder (typically after completing the follow-up)</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <path_params>
+            <param name="id" type="integer" required="true"/>
+          </path_params>
+        </request>
+        
+        <response status="200">
+          <description>Empty response or success message</description>
+        </response>
+        
+        <react_notes>
+          Show confirmation dialog before deletion.
+          Provide "Mark as Complete" action that deletes the reminder.
+          Remove from local state immediately after success.
+          Decrement reminderCount in application detail view.
+          Show brief success notification.
+        </react_notes>
+      </endpoint>
+    </group>
+  </workflow>
+
+  <!-- ========================================
+       WORKFLOW 5: INTERVIEW NOTES MANAGEMENT
+       ======================================== -->
+  <workflow name="interview_notes_management">
+    <description>Track interview notes and feedback for each application stage</description>
+    <react_pages>ApplicationDetailPage, InterviewNotesPanel, AddNoteModal</react_pages>
+    
+    <group name="view_notes">
+      <endpoint>
+        <n>Get Interview Notes for Application</n>
+        <method>GET</method>
+        <path>/api/notes/application/{applicationId}</path>
+        <auth_required>true</auth_required>
+        <used_in_component>ApplicationDetailPage (notes tab/section)</used_in_component>
+        <description>Fetch all interview notes associated with specific application</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <path_params>
+            <param name="applicationId" type="integer" required="true"/>
+          </path_params>
+        </request>
+        
+        <response status="200" type="array">
+          <item type="object">
+            <field name="id" type="integer"/>
+            <field name="application" type="string" description="Application reference"/>
+            <field name="note" type="string"/>
+            <field name="createdAt" type="datetime"/>
+            <field name="interviewStage" type="string"/>
+          </item>
+        </response>
+        
+        <react_notes>
+          Display in reverse chronological order (newest first).
+          Group by interviewStage if multiple stages exist.
+          Format createdAt as relative time (e.g., "2 days ago").
+          Show rich text formatting if note contains HTML/markdown.
+          Display empty state with "Add your first interview note" CTA.
+        </react_notes>
+      </endpoint>
+    </group>
+
+    <group name="create_note">
+      <endpoint>
+        <n>Create Interview Note</n>
+        <method>POST</method>
+        <path>/api/notes/application/{applicationId}</path>
+        <auth_required>true</auth_required>
+        <used_in_component>AddNoteModal, ApplicationDetailPage</used_in_component>
+        <description>Add new interview note with stage information</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <path_params>
+            <param name="applicationId" type="integer" required="true"/>
+          </path_params>
+          <content_type>application/json</content_type>
+          <body>
+            <field name="note" type="string" required="true"/>
+            <field name="interviewStage" type="string" description="e.g., Phone Screen, Technical Round, Final Interview"/>
+          </body>
+        </request>
+        
+        <response status="200">
+          <field name="id" type="integer"/>
+          <field name="application" type="string"/>
+          <field name="note" type="string"/>
+          <field name="createdAt" type="datetime"/>
+          <field name="interviewStage" type="string"/>
+        </response>
+        
+        <react_notes>
+          Use textarea with markdown support or rich text editor.
+          Provide dropdown/select for common interview stages.
+          Allow custom interviewStage input if not in predefined list.
+          Auto-suggest stage based on current application status.
+          Show character count (recommend 2000 char max for UX).
+          Add note immediately to UI after success.
+          Increment interviewNoteCount in application object.
+        </react_notes>
+      </endpoint>
+    </group>
+
+    <group name="delete_note">
+      <endpoint>
+        <n>Delete Interview Note</n>
+        <method>DELETE</method>
+        <path>/api/notes/{id}</path>
+        <auth_required>true</auth_required>
+        <used_in_component>ApplicationDetailPage, InterviewNotesPanel</used_in_component>
+        <description>Remove an interview note</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <path_params>
+            <param name="id" type="integer" required="true"/>
+          </path_params>
+        </request>
+        
+        <response status="200">
+          <description>Empty response or success message</description>
+        </response>
+        
+        <react_notes>
+          Show confirmation dialog before deletion.
+          Include preview of note content in confirmation.
+          Remove from UI immediately after success.
+          Decrement interviewNoteCount in application object.
+          Consider "soft delete" with undo option for better UX.
+        </react_notes>
+      </endpoint>
+    </group>
+  </workflow>
+
+  <!-- ========================================
+       WORKFLOW 6: USER PROFILE MANAGEMENT
+       ======================================== -->
+  <workflow name="user_profile_management">
+    <description>View and update user profile information</description>
+    <react_pages>ProfilePage, SettingsPage, EditProfilePage</react_pages>
+    
+    <group name="view_profile">
+      <endpoint>
+        <n>Get All Users</n>
+        <method>GET</method>
+        <path>/api/users</path>
+        <auth_required>true</auth_required>
+        <used_in_component>AdminPage (user management)</used_in_component>
+        <description>Fetch all registered users - admin only</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+        </request>
+        
+        <response status="200" type="array">
+          <item type="object">
+            <field name="id" type="integer"/>
+            <field name="firstName" type="string"/>
+            <field name="lastName" type="string"/>
+            <field name="email" type="string"/>
+            <field name="createdAt" type="datetime"/>
+          </item>
+        </response>
+        
+        <react_notes>
+          Restrict access to users with ADMIN role.
+          Display in data table with sorting and filtering.
+          Show creation date and account status.
+          This endpoint may return 403 Forbidden for non-admin users.
+        </react_notes>
+      </endpoint>
+
+      <endpoint>
+        <n>Get User by ID</n>
+        <method>GET</method>
+        <path>/api/users/{id}</path>
+        <auth_required>true</auth_required>
+        <used_in_component>ProfilePage, EditProfilePage</used_in_component>
+        <description>Fetch specific user details by ID</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <path_params>
+            <param name="id" type="integer" required="true"/>
+          </path_params>
+        </request>
+        
+        <response status="200">
+          <field name="id" type="integer"/>
+          <field name="firstName" type="string"/>
+          <field name="lastName" type="string"/>
+          <field name="email" type="string"/>
+          <field name="createdAt" type="datetime"/>
+        </response>
+        
+        <react_notes>
+          Use for viewing own profile or admin viewing other users.
+          Display read-only profile information.
+          Show "Member since" using createdAt date.
+          Provide "Edit Profile" button to navigate to edit form.
+        </react_notes>
+      </endpoint>
+
+      <endpoint>
+        <n>Get User by Email</n>
+        <method>GET</method>
+        <path>/api/users/email/{email}</path>
+        <auth_required>true</auth_required>
+        <used_in_component>AdminPage, UserSearchComponent</used_in_component>
+        <description>Look up user by email address</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <path_params>
+            <param name="email" type="string" required="true"/>
+          </path_params>
+        </request>
+        
+        <response status="200">
+          <field name="id" type="integer"/>
+          <field name="firstName" type="string"/>
+          <field name="lastName" type="string"/>
+          <field name="email" type="string"/>
+          <field name="createdAt" type="datetime"/>
+        </response>
+        
+        <react_notes>
+          Primarily for admin user search functionality.
+          Handle 404 error if email not found.
+          May be restricted to admin users only.
+        </react_notes>
+      </endpoint>
+    </group>
+
+    <group name="update_profile">
+      <endpoint>
+        <n>Update User Profile</n>
+        <method>PUT</method>
+        <path>/api/users/{id}</path>
+        <auth_required>true</auth_required>
+        <used_in_component>EditProfilePage, SettingsPage</used_in_component>
+        <description>Update user profile information including password</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <path_params>
+            <param name="id" type="integer" required="true"/>
+          </path_params>
+          <content_type>application/json</content_type>
+          <body>
+            <field name="firstName" type="string" min_length="2" max_length="50"/>
+            <field name="lastName" type="string" min_length="2" max_length="50"/>
+            <field name="email" type="string" format="email"/>
+            <field name="password" type="string" min_length="8"/>
+            <field name="role" type="enum" values="USER,ADMIN"/>
+          </body>
+        </request>
+        
+        <response status="200">
+          <field name="id" type="integer"/>
+          <field name="firstName" type="string"/>
+          <field name="lastName" type="string"/>
+          <field name="email" type="string"/>
+          <field name="createdAt" type="datetime"/>
+        </response>
+        
+        <react_notes>
+          Pre-populate form with current user data.
+          Only allow users to edit their own profile (match ID with auth token).
+          Password field optional - only send if user wants to change it.
+          Separate password change into dedicated "Change Password" section.
+          Confirm password with second input field before submission.
+          If email changes, may require re-verification - show warning.
+          Update user context/state after successful update.
+          Role changes should be admin-only functionality.
+        </react_notes>
+      </endpoint>
+    </group>
+
+    <group name="delete_account">
+      <endpoint>
+        <n>Delete User Account</n>
+        <method>DELETE</method>
+        <path>/api/users/{id}</path>
+        <auth_required>true</auth_required>
+        <used_in_component>SettingsPage (danger zone), AdminPage</used_in_component>
+        <description>Permanently delete user account and all associated data</description>
+        
+        <request>
+          <headers>
+            <header name="Authorization" value="Bearer {token}" required="true"/>
+          </headers>
+          <path_params>
+            <param name="id" type="integer" required="true"/>
+          </path_params>
+        </request>
+        
+        <response status="200">
+          <description>Empty response or success message</description>
+        </response>
+        
+        <react_notes>
+          Place in "Danger Zone" section of settings with clear warning.
+          Require password confirmation before deletion.
+          Show multi-step confirmation with explicit consequences:
+            - All applications will be deleted
+            - All reminders and notes will be deleted
+            - This action cannot be undone
+          Type "DELETE" or email to confirm.
+          After successful deletion, clear auth token and redirect to homepage.
+          Show final goodbye message before redirect.
+        </react_notes>
+      </endpoint>
+    </group>
+  </workflow>
+
+  <!-- ========================================
+       REACT APPLICATION ARCHITECTURE
+       ======================================== -->
+  <react_architecture>
+    <routing>
+      <route path="/" component="LandingPage" protected="false"/>
+      <route path="/register" component="RegisterPage" protected="false"/>
+      <route path="/verify-email" component="VerifyEmailPage" protected="false"/>
+      <route path="/login" component="LoginPage" protected="false"/>
+      <route path="/dashboard" component="DashboardPage" protected="true"/>
+      <route path="/applications" component="ApplicationsListPage" protected="true"/>
+      <route path="/applications/new" component="AddApplicationPage" protected="true"/>
+      <route path="/applications/:id" component="ApplicationDetailPage" protected="true"/>
+      <route path="/applications/:id/edit" component="EditApplicationPage" protected="true"/>
+      <route path="/reminders" component="RemindersListPage" protected="true"/>
+      <route path="/profile" component="ProfilePage" protected="true"/>
+      <route path="/profile/edit" component="EditProfilePage" protected="true"/>
+      <route path="/settings" component="SettingsPage" protected="true"/>
+      <route path="/admin/users" component="AdminPage" protected="true" role="ADMIN"/>
+    </routing>
+
+    <state_management>
+      <global_state>
+        <auth_context>
+          <field name="user" description="Current authenticated user object"/>
+          <field name="token" description="JWT bearer token"/>
+          <field name="isAuthenticated" type="boolean"/>
+          <field name="login" type="function"/>
+          <field name="logout" type="function"/>
+          <field name="updateUser" type="function"/>
+        </auth_context>
+        
+        <applications_context>
+          <field name="applications" type="array" description="List of user's applications"/>
+          <field name="loading" type="boolean"/>
+          <field name="error" type="string"/>
+          <field name="fetchApplications" type="function"/>
+          <field name="addApplication" type="function"/>
+          <field name="updateApplication" type="function"/>
+          <field name="deleteApplication" type="function"/>
+          <field name="updateStatus" type="function"/>
+        </applications_context>
+        
+        <dashboard_context>
+          <field name="stats" type="object" description="Dashboard statistics"/>
+          <field name="fetchStats" type="function"/>
+        </dashboard_context>
+      </global_state>
+      
+      <local_state_examples>
+        <component name="ApplicationsListPage">
+          <state name="searchQuery" type="string"/>
+          <state name="activeFilters" type="object"/>
+          <state name="sortBy" type="string"/>
+          <state name="viewMode" type="enum" values="list,grid,kanban"/>
+        </component>
+        
+        <component name="ApplicationDetailPage">
+          <state name="activeTab" type="string" values="overview,reminders,notes,history"/>
+          <state name="showReminderModal" type="boolean"/>
+          <state name="showNoteModal" type="boolean"/>
+        </component>
+      </local_state_examples>
+    </state_management>
+
+    <api_client_setup>
+      <base_configuration>
+        <base_url>http://localhost:8080</base_url>
+        <timeout>30000</timeout>
+        <headers>
+          <header name="Content-Type" value="application/json"/>
+          <header name="Authorization" value="Bearer {token}" conditional="if authenticated"/>
+        </headers>
+      </base_configuration>
+      
+      <interceptors>
+        <request_interceptor>
+          <description>Add Authorization header with token from AuthContext</description>
+          <description>Add request timestamp for logging</description>
+        </request_interceptor>
+        
+        <response_interceptor>
+          <description>Handle 401 Unauthorized - clear auth and redirect to login</description>
+          <description>Handle 403 Forbidden - show permission denied message</description>
+          <description>Handle 404 Not Found - show not found page</description>
+          <description>Handle 500 Server Error - show error toast</description>
+          <description>Extract error messages from response body</description>
+        </response_interceptor>
+      </interceptors>
+      
+      <error_handling>
+        <network_errors>Show offline banner and retry mechanism</network_errors>
+        <validation_errors>Display field-level errors in forms</validation_errors>
+        <auth_errors>Redirect to login and show session expired message</auth_errors>
+        <server_errors>Show user-friendly error message with support contact</server_errors>
+      </error_handling>
+    </api_client_setup>
+
+    <authentication_flow>
+      <step order="1">User submits login credentials to POST /api/auth/login</step>
+      <step order="2">Receive JWT token and user object in response</step>
+      <step order="3">Store token in localStorage or sessionStorage</step>
+      <step order="4">Store user object in AuthContext for global access</step>
+      <step order="5">Set default Authorization header for all API requests</step>
+      <step order="6">Redirect to /dashboard</step>
+      <step order="7">On app load, check for stored token and validate</step>
+      <step order="8">If invalid/expired, clear storage and redirect to /login</step>
+      <step order="9">On logout, clear token, reset context, redirect to /</step>
+    </authentication_flow>
+
+    <ui_ux_considerations>
+      <loading_states>
+        <skeleton_screens>Use for initial page loads</skeleton_screens>
+        <spinners>Use for inline actions (button clicks, form submissions)</spinners>
+        <progress_bars>Use for multi-step processes</progress_bars>
+        <optimistic_updates>Update UI immediately, rollback on error</optimistic_updates>
+      </loading_states>
+      
+      <notifications>
+        <toast_messages>Success, error, info, warning</toast_messages>
+        <inline_validation>Real-time form field validation</inline_validation>
+        <confirmation_dialogs>Before destructive actions (delete, status changes)</confirmation_dialogs>
+      </notifications>
+      
+      <data_refresh_strategy>
+        <on_mount>Fetch data when component mounts</on_mount>
+        <on_action>Refetch after create/update/delete operations</on_action>
+        <polling>Consider for reminders (check every 5 minutes)</polling>
+        <cache_invalidation>Clear cache on mutations</cache_invalidation>
+      </data_refresh_strategy>
+      
+      <responsive_design>
+        <mobile_first>Design for mobile, enhance for desktop</mobile_first>
+        <breakpoints>sm: 640px, md: 768px, lg: 1024px, xl: 1280px</breakpoints>
+        <navigation>Hamburger menu on mobile, sidebar on desktop</navigation>
+      </responsive_design>
+    </ui_ux_considerations>
+
+    <performance_optimization>
+      <lazy_loading>Code-split routes using React.lazy()</lazy_loading>
+      <memoization>Use React.memo() for list items and complex components</memoization>
+      <virtualization>Implement virtual scrolling for large application lists</virtualization>
+      <debouncing>Debounce search input (300-500ms)</debouncing>
+      <caching>Cache dashboard stats for 5 minutes</caching>
+      <pagination>Use paginated endpoint for lists over 50 items</pagination>
+    </performance_optimization>
+
+    <accessibility>
+      <aria_labels>Add aria-labels to all interactive elements</aria_labels>
+      <keyboard_navigation>Ensure all actions accessible via keyboard</keyboard_navigation>
+      <focus_management>Manage focus for modals and form submissions</focus_management>
+      <color_contrast>Ensure WCAG AA compliance (4.5:1 ratio)</color_contrast>
+      <screen_readers>Test with screen readers (NVDA, JAWS, VoiceOver)</screen_readers>
+    </accessibility>
+
+    <security_considerations>
+      <xss_prevention>Sanitize user input before rendering</xss_prevention>
+      <csrf_protection>Token-based authentication provides CSRF protection</csrf_protection>
+      <secure_storage>Consider encrypting sensitive data in localStorage</secure_storage>
+      <token_expiration>Implement token refresh or re-authentication flow</token_expiration>
+      <role_based_access>Check user role before rendering admin features</role_based_access>
+    </security_considerations>
+  </react_architecture>
+
+  <!-- ========================================
+       SUMMARY & RECOMMENDATIONS
+       ======================================== -->
+  <implementation_summary>
+    <workflow_structure>
+      The API is organized into 6 primary user workflows:
+      
+      1. **Authentication & Onboarding** (4 endpoints)
+         - User registration with email verification
+         - Email verification and resend functionality
+         - Login with JWT token issuance
+      
+      2. **Dashboard & Overview** (1 endpoint)
+         - Aggregated statistics for quick insights
+         - Status distribution and salary averages
+      
+      3. **Application Management** (10 endpoints)
+         - Full CRUD operations for job applications
+         - Search, filter, and status-based queries
+         - Paginated and non-paginated list views
+         - Quick status updates with history tracking
+      
+      4. **Reminders Management** (4 endpoints)
+         - View all reminders or filter by application
+         - Create follow-up reminders with custom messages
+         - Delete completed reminders
+      
+      5. **Interview Notes Management** (3 endpoints)
+         - View, create, and delete interview notes
+         - Track notes by interview stage
+         - Rich text note content
+      
+      6. **User Profile Management** (5 endpoints)
+         - View and update user profiles
+         - Password changes and email updates
+         - Account deletion with cascading effects
+         - Admin user management features
+    </workflow_structure>
+
+    <assumptions>
+      <assumption>JWT token authentication is used throughout</assumption>
+      <assumption>Token is included in Authorization header as "Bearer {token}"</assumption>
+      <assumption>All protected endpoints return 401 if token is missing/invalid</assumption>
+      <assumption>Email verification is required before full account access</assumption>
+      <assumption>Status changes automatically create StatusHistory entries</assumption>
+      <assumption>Deleting an application cascades to reminders and notes</assumption>
+      <assumption>User can only access their own applications (filtered server-side)</assumption>
+      <assumption>Admin role has additional permissions (user management)</assumption>
+      <assumption>Dates are formatted as ISO 8601 strings</assumption>
+      <assumption>Salary values are stored as doubles (no currency specified)</assumption>
+    </assumptions>
+
+    <react_specific_recommendations>
+      <recommendation priority="high">
+        **Authentication**: Implement a React Context (AuthContext) to manage authentication state globally. Store JWT token in localStorage for persistence across sessions, but validate on app initialization.
+      </recommendation>
+      
+      <recommendation priority="high">
+        **API Client**: Create a centralized Axios instance with interceptors for automatic token injection and global error handling. This eliminates repetitive header configuration.
+      </recommendation>
+      
+      <recommendation priority="high">
+        **Protected Routes**: Build a ProtectedRoute wrapper component that checks authentication status and redirects to login if unauthenticated. Nest all authenticated routes inside this wrapper.
+      </recommendation>
+      
+      <recommendation priority="medium">
+        **State Management**: For applications list and dashboard stats, consider using React Query or SWR for automatic caching, background refetching, and optimistic updates. This reduces boilerplate significantly.
+      </recommendation>
+      
+      <recommendation priority="medium">
+        **Status Updates**: Implement optimistic UI updates when changing application status. Update local state immediately, then rollback if the API call fails. This provides instant feedback.
+      </recommendation>
+      
+      <recommendation priority="medium">
+        **Search & Filter**: Build filter state management that combines multiple criteria (status, salary range, keyword) into a single API call to /api/applications/filter. Use URL query parameters to make filters shareable/bookmarkable.
+      </recommendation>
+      
+      <recommendation priority="low">
+        **Kanban View**: For status-based views, implement drag-and-drop using React DnD or dnd-kit. On drop, call PATCH /api/applications/{id}/status to update the backend.
+      </recommendation>
+      
+      <recommendation priority="low">
+        **Real-time Reminders**: Consider implementing a browser notification system using the Notifications API when reminders are due. Poll GET /api/reminders periodically (every 5-10 minutes) to check for upcoming reminders.
+      </recommendation>
+      
+      <recommendation priority="low">
+        **Export Feature**: Although not in the API, consider adding client-side CSV export of applications using a library like PapaParse. This is a common user request for job tracking apps.
+      </recommendation>
+    </react_specific_recommendations>
+
+    <missing_endpoints_noted>
+      <missing>No password reset/forgot password flow endpoints</missing>
+      <missing>No token refresh endpoint (may need to re-login on expiration)</missing>
+      <missing>No endpoint to fetch status history for an application</missing>
+      <missing>No batch operations (bulk delete, bulk status update)</missing>
+      <missing>No analytics endpoints (application success rate, time-to-offer metrics)</missing>
+      <missing>No file upload for resumes or cover letters</missing>
+      <missing>No contacts/recruiter tracking endpoints</missing>
+    </missing_endpoints_noted>
+
+    <typical_user_journey>
+      <journey>
+        1. User visits landing page → Clicks "Sign Up"
+        2. Fills registration form → Submits to POST /api/users/register
+        3. Receives verification email → Clicks link with token
+        4. Token sent to GET /api/auth/verify → Email verified
+        5. User redirected to login → Submits credentials to POST /api/auth/login
+        6. Receives JWT token → Stored in localStorage and AuthContext
+        7. Redirected to /dashboard → GET /api/dashboard/stats loads
+        8. User clicks "Add Application" → Fills form → POST /api/applications
+        9. Application appears in list → GET /api/applications/me
+        10. User clicks application → GET /api/applications/{id} loads details
+        11. User adds reminder → POST /api/reminders/application/{id}
+        12. User adds interview note → POST /api/notes/application/{id}
+        13. User updates status → PATCH /api/applications/{id}/status
+        14. Dashboard stats automatically refresh → GET /api/dashboard/stats
+        15. User searches applications → GET /api/applications/search?keyword=...
+        16. User filters by status → GET /api/applications/filter?status=...
+        17. User updates profile → PUT /api/users/{id}
+        18. User logs out → Clear token and redirect to homepage
+      </journey>
+    </typical_user_journey>
+  </implementation_summary>
+</frontend_api_specification>
