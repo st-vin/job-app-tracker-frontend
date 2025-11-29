@@ -91,6 +91,30 @@ export default function RegisterPage() {
     }
   };
 
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    handleSubmit(onSubmit)(e);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Prevent form submission on Enter key in input fields
+    // Users must click the submit button to register
+    if (e.key === 'Enter' && e.currentTarget.type !== 'submit') {
+      e.preventDefault();
+      // Optionally move to next field or do nothing
+      const form = e.currentTarget.form;
+      if (form) {
+        const inputs = Array.from(form.querySelectorAll('input:not([type="submit"])')) as HTMLInputElement[];
+        const currentIndex = inputs.indexOf(e.currentTarget);
+        const nextInput = inputs[currentIndex + 1];
+        
+        if (nextInput) {
+          nextInput.focus();
+        }
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
       <Card className="w-full max-w-md p-8">
@@ -99,18 +123,18 @@ export default function RegisterPage() {
           <p className="text-muted-foreground">Join us to track your job applications</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleFormSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">First Name</label>
-              <Input {...register('firstName')} placeholder="John" />
+              <Input {...register('firstName')} placeholder="John" onKeyDown={handleKeyDown} />
               {errors.firstName && (
                 <p className="text-sm text-destructive mt-1">{errors.firstName.message}</p>
               )}
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Last Name</label>
-              <Input {...register('lastName')} placeholder="Doe" />
+              <Input {...register('lastName')} placeholder="Doe" onKeyDown={handleKeyDown} />
               {errors.lastName && (
                 <p className="text-sm text-destructive mt-1">{errors.lastName.message}</p>
               )}
@@ -120,7 +144,7 @@ export default function RegisterPage() {
           <div>
             <label className="block text-sm font-medium mb-2">Email</label>
             <div className="relative">
-              <Input {...register('email')} type="email" placeholder="you@example.com" />
+              <Input {...register('email')} type="email" placeholder="you@example.com" onKeyDown={handleKeyDown} />
               {isCheckingEmail && <Loader2 className="absolute right-3 top-3 w-4 h-4 animate-spin" />}
             </div>
             {emailExists && (
@@ -136,7 +160,7 @@ export default function RegisterPage() {
 
           <div>
             <label className="block text-sm font-medium mb-2">Password</label>
-            <Input {...register('password')} type="password" placeholder="••••••••" />
+            <Input {...register('password')} type="password" placeholder="••••••••" onKeyDown={handleKeyDown} />
             {errors.password && (
               <p className="text-sm text-destructive mt-1">{errors.password.message}</p>
             )}
@@ -144,7 +168,7 @@ export default function RegisterPage() {
 
           <div>
             <label className="block text-sm font-medium mb-2">Confirm Password</label>
-            <Input {...register('confirmPassword')} type="password" placeholder="••••••••" />
+            <Input {...register('confirmPassword')} type="password" placeholder="••••••••" onKeyDown={handleKeyDown} />
             {errors.confirmPassword && (
               <p className="text-sm text-destructive mt-1">{errors.confirmPassword.message}</p>
             )}
