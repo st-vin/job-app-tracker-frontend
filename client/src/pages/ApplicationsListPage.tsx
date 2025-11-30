@@ -184,9 +184,6 @@ export default function ApplicationsListPage() {
             {filteredApplications.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Button onClick={() => navigate("/applications/new")} className="gap-2">
-          New Application
-        </Button>
       </div>
 
       {/* Search and Filters */}

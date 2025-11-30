@@ -68,6 +68,11 @@ export default function RegisterPage() {
   }, [email, checkEmailExists]);
 
   const onSubmit = async (data: RegisterFormData) => {
+    // Prevent submission if already submitting
+    if (isSubmitting) {
+      return;
+    }
+
     if (emailExists) {
       toast.error('Email already registered');
       return;
@@ -85,6 +90,7 @@ export default function RegisterPage() {
       toast.success('Registration successful! Check your email to verify your account.');
       navigate('/verify-email', { state: { email: data.email } });
     } catch (error: any) {
+      // Don't redirect on error - let user fix and retry
       toast.error(error.response?.data?.message || 'Registration failed');
     } finally {
       setIsSubmitting(false);
@@ -93,15 +99,22 @@ export default function RegisterPage() {
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    handleSubmit(onSubmit)(e);
+    e.stopPropagation();
+    
+    // Only submit if not already submitting
+    if (!isSubmitting) {
+      handleSubmit(onSubmit)(e);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Prevent form submission on Enter key in input fields
     // Users must click the submit button to register
-    if (e.key === 'Enter' && e.currentTarget.type !== 'submit') {
+    if (e.key === 'Enter') {
       e.preventDefault();
-      // Optionally move to next field or do nothing
+      e.stopPropagation();
+      
+      // Move to next field
       const form = e.currentTarget.form;
       if (form) {
         const inputs = Array.from(form.querySelectorAll('input:not([type="submit"])')) as HTMLInputElement[];
@@ -115,6 +128,15 @@ export default function RegisterPage() {
     }
   };
 
+  const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isSubmitting && !emailExists) {
+      handleSubmit(onSubmit)(e as any);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
       <Card className="w-full max-w-md p-8">
@@ -123,7 +145,7 @@ export default function RegisterPage() {
           <p className="text-muted-foreground">Join us to track your job applications</p>
         </div>
 
-        <form onSubmit={handleFormSubmit} className="space-y-4">
+        <form onSubmit={handleFormSubmit} noValidate className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">First Name</label>
@@ -175,9 +197,10 @@ export default function RegisterPage() {
           </div>
 
           <Button
-            type="submit"
+            type="button"
             className="w-full"
             disabled={isSubmitting || emailExists}
+            onClick={handleButtonClick}
           >
             {isSubmitting ? (
               <>

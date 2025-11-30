@@ -67,10 +67,6 @@ export default function DashboardPage() {
           <p className="text-muted-foreground mt-2">Welcome back! Here's your job application overview.</p>
         </div>
         <div className="flex gap-3">
-          <Button onClick={() => navigate('/applications/new')} className="gap-2">
-            <Briefcase className="w-4 h-4" />
-            New Application
-          </Button>
           <Button variant="outline" onClick={() => navigate('/applications')}>
             View All
           </Button>
