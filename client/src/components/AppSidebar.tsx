@@ -55,12 +55,6 @@ const navSections: Array<{
         icon: ListChecks,
         matchPrefix: true,
       },
-      {
-        title: "Add Application",
-        description: "Create a new job record",
-        path: "/applications/new",
-        icon: PlusCircle,
-      },
     ],
   },
   {

@@ -50,10 +50,26 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Clear token and redirect to login
-      localStorage.removeItem('job_tracker_token');
-      localStorage.removeItem('job_tracker_user');
-      window.location.href = '/login';
+      // Don't redirect for public endpoints (registration, login, etc.)
+      const url = error.config?.url || '';
+      const isPublicEndpoint = 
+        url.includes('/api/users/register') ||
+        url.includes('/api/auth/login') ||
+        url.includes('/api/auth/verify') ||
+        url.includes('/api/auth/resend-verification') ||
+        url.includes('/api/users/exists');
+      
+      if (!isPublicEndpoint) {
+        // Clear token and redirect to login only for protected endpoints
+        localStorage.removeItem('job_tracker_token');
+        localStorage.removeItem('job_tracker_user');
+        // Only redirect if we're not already on a public page
+        if (!window.location.pathname.includes('/login') && 
+            !window.location.pathname.includes('/register') &&
+            !window.location.pathname.includes('/verify-email')) {
+          window.location.href = '/login';
+        }
+      }
     }
 
     return Promise.reject(error);

@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "./ui/button";
-import { LogOut, Plus } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "./ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 
@@ -39,17 +39,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     Hi, {user.firstName}
                   </span>
                 )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => navigate("/applications/new")}
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">
-                    New Application
-                  </span>
-                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
