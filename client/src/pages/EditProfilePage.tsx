@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save } from '@/lib/lucide-icons';
 import { toast } from 'react-hot-toast';
 import { usersApi } from '@/api/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -250,4 +250,5 @@ export default function EditProfilePage() {
     </div>
   );
 }
+
 

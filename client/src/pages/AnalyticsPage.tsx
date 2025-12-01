@@ -1,36 +1,31 @@
-import React, { useMemo } from "react";
+import React, { useMemo, Suspense, lazy } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  ComposedChart,
-  Cell,
-} from "recharts";
-import {
-  TrendingUp,
-  TrendingDown,
-  Calendar,
-  DollarSign,
-  Briefcase,
-  Target,
-  Activity,
-  BarChart3,
-} from "lucide-react";
+import { TrendingUp } from "@/lib/lucide-icons";
+import { TrendingDown } from "@/lib/lucide-icons";
+import { Calendar } from "@/lib/lucide-icons";
+import { DollarSign } from "@/lib/lucide-icons";
+import { Briefcase } from "@/lib/lucide-icons";
+import { Target } from "@/lib/lucide-icons";
+import { Activity } from "@/lib/lucide-icons";
+import { BarChart3 } from "@/lib/lucide-icons";
 import { applicationsApi } from "../api/client";
 import { Application, ApplicationStatus } from "../types/application.types";
 import { format, subDays, startOfWeek, endOfWeek, eachWeekOfInterval, parseISO, isWithinInterval } from "date-fns";
+
+// Lazy load chart components
+const DailyTrendsChart = lazy(() => import("../components/charts/AnalyticsCharts").then(m => ({ default: m.DailyTrendsChart })));
+const WeeklyTrendsChart = lazy(() => import("../components/charts/AnalyticsCharts").then(m => ({ default: m.WeeklyTrendsChart })));
+const ResponseRateChart = lazy(() => import("../components/charts/AnalyticsCharts").then(m => ({ default: m.ResponseRateChart })));
+const StatusDistributionChart = lazy(() => import("../components/charts/AnalyticsCharts").then(m => ({ default: m.StatusDistributionChart })));
+const ConversionFunnelChart = lazy(() => import("../components/charts/AnalyticsCharts").then(m => ({ default: m.ConversionFunnelChart })));
+const SalaryDistributionChart = lazy(() => import("../components/charts/AnalyticsCharts").then(m => ({ default: m.SalaryDistributionChart })));
+const AvgSalaryByStatusChart = lazy(() => import("../components/charts/AnalyticsCharts").then(m => ({ default: m.AvgSalaryByStatusChart })));
+const SalaryTrendsChart = lazy(() => import("../components/charts/AnalyticsCharts").then(m => ({ default: m.SalaryTrendsChart })));
+const SourceDataChart = lazy(() => import("../components/charts/AnalyticsCharts").then(m => ({ default: m.SourceDataChart })));
+const TopCompaniesChart = lazy(() => import("../components/charts/AnalyticsCharts").then(m => ({ default: m.TopCompaniesChart })));
+const DayOfWeekChart = lazy(() => import("../components/charts/AnalyticsCharts").then(m => ({ default: m.DayOfWeekChart })));
 
 const STATUS_COLORS: Record<ApplicationStatus, string> = {
   APPLIED: "#3b82f6",
@@ -369,334 +364,71 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Application Trends Over Time */}
-      <Card className="p-6">
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <TrendingUp className="w-5 h-5" />
-            Application Trends (Last 30 Days)
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Daily application submission volume
-          </p>
-        </div>
-        <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={analytics.dailyTrends}>
-            <defs>
-              <linearGradient id="colorApplications" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-            <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-            <YAxis allowDecimals={false} />
-            <Tooltip
-              cursor={{ fill: "rgba(148, 163, 184, 0.15)" }}
-              formatter={(value) => [`${value} applications`, "Count"]}
-            />
-            <Area
-              type="monotone"
-              dataKey="applications"
-              stroke="#3b82f6"
-              fillOpacity={1}
-              fill="url(#colorApplications)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </Card>
+      <Suspense fallback={<Card className="p-6"><Skeleton className="h-[300px]" /></Card>}>
+        <DailyTrendsChart data={analytics.dailyTrends} />
+      </Suspense>
 
       {/* Weekly Velocity and Response Rate */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              Weekly Application Velocity
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Applications per week over the last 6 months
-            </p>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={analytics.weeklyTrends}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-              <XAxis dataKey="week" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} />
-              <YAxis allowDecimals={false} />
-              <Tooltip
-                cursor={{ fill: "rgba(148, 163, 184, 0.15)" }}
-                formatter={(value) => [`${value} applications`, "Count"]}
-              />
-              <Line
-                type="monotone"
-                dataKey="applications"
-                stroke="#8b5cf6"
-                strokeWidth={2}
-                dot={{ fill: "#8b5cf6", r: 4 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
-
-        <Card className="p-6">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Activity className="w-5 h-5" />
-              Response Rate Over Time
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Percentage of applications that received responses
-            </p>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart data={analytics.responseRates}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-              <YAxis yAxisId="left" label={{ value: "Response Rate %", angle: -90, position: "insideLeft" }} />
-              <YAxis yAxisId="right" orientation="right" label={{ value: "Total Apps", angle: 90, position: "insideRight" }} />
-              <Tooltip
-                cursor={{ fill: "rgba(148, 163, 184, 0.15)" }}
-                formatter={(value, name) => {
-                  if (name === "responseRate") return [`${value}%`, "Response Rate"];
-                  return [value, "Total Applications"];
-                }}
-              />
-              <Bar yAxisId="right" dataKey="total" fill="#94a3b8" opacity={0.3} />
-              <Line
-                yAxisId="left"
-                type="monotone"
-                dataKey="responseRate"
-                stroke="#10b981"
-                strokeWidth={2}
-                dot={{ fill: "#10b981", r: 4 }}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </Card>
+        <Suspense fallback={<Card className="p-6"><Skeleton className="h-[300px]" /></Card>}>
+          <WeeklyTrendsChart data={analytics.weeklyTrends} />
+        </Suspense>
+        <Suspense fallback={<Card className="p-6"><Skeleton className="h-[300px]" /></Card>}>
+          <ResponseRateChart data={analytics.responseRates} />
+        </Suspense>
       </div>
 
       {/* Status Distribution and Conversion Funnel */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <BarChart3 className="w-5 h-5" />
-              Status Distribution
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Current distribution across all statuses
-            </p>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={analytics.statusCounts} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-              <XAxis type="number" allowDecimals={false} />
-              <YAxis dataKey="status" type="category" width={120} tick={{ fontSize: 12 }} />
-              <Tooltip
-                cursor={{ fill: "rgba(148, 163, 184, 0.15)" }}
-                formatter={(value) => [`${value} applications`, "Count"]}
-              />
-              <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                {analytics.statusCounts.map((entry, index) => (
-                  <Cell key={index} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-
-        <Card className="p-6">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Target className="w-5 h-5" />
-              Conversion Funnel
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Applications progressing through stages
-            </p>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={analytics.conversionFunnel}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-              <XAxis dataKey="stage" tick={{ fontSize: 12 }} />
-              <YAxis allowDecimals={false} />
-              <Tooltip
-                cursor={{ fill: "rgba(148, 163, 184, 0.15)" }}
-                formatter={(value) => [`${value} applications`, "Count"]}
-              />
-              <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
+        <Suspense fallback={<Card className="p-6"><Skeleton className="h-[300px]" /></Card>}>
+          <StatusDistributionChart data={analytics.statusCounts} />
+        </Suspense>
+        <Suspense fallback={<Card className="p-6"><Skeleton className="h-[300px]" /></Card>}>
+          <ConversionFunnelChart data={analytics.conversionFunnel} />
+        </Suspense>
       </div>
 
       {/* Salary Analytics */}
       {analytics.salaryRanges.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="p-6">
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <DollarSign className="w-5 h-5" />
-                Salary Distribution
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Distribution of salary ranges
-              </p>
-            </div>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={analytics.salaryRanges}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis dataKey="range" tick={{ fontSize: 12 }} />
-                <YAxis allowDecimals={false} />
-                <Tooltip
-                  cursor={{ fill: "rgba(148, 163, 184, 0.15)" }}
-                  formatter={(value) => [`${value} applications`, "Count"]}
-                />
-                <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-
+          <Suspense fallback={<Card className="p-6"><Skeleton className="h-[300px]" /></Card>}>
+            <SalaryDistributionChart data={analytics.salaryRanges} />
+          </Suspense>
           {analytics.avgSalaryByStatus.length > 0 && (
-            <Card className="p-6">
-              <div className="mb-6">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <DollarSign className="w-5 h-5" />
-                  Average Salary by Status
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Mean salary at each application stage
-                </p>
-              </div>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={analytics.avgSalaryByStatus}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="status" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} />
-                  <YAxis label={{ value: "Salary (K)", angle: -90, position: "insideLeft" }} />
-                  <Tooltip
-                    cursor={{ fill: "rgba(148, 163, 184, 0.15)" }}
-                    formatter={(value) => [`$${value}K`, "Average Salary"]}
-                  />
-                  <Bar dataKey="avgSalary" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </Card>
+            <Suspense fallback={<Card className="p-6"><Skeleton className="h-[300px]" /></Card>}>
+              <AvgSalaryByStatusChart data={analytics.avgSalaryByStatus} />
+            </Suspense>
           )}
         </div>
       )}
 
       {/* Salary Trends */}
       {analytics.salaryTrends.length > 0 && (
-        <Card className="p-6">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Salary Trends Over Time
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Average salary of applications by month
-            </p>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={analytics.salaryTrends}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-              <YAxis label={{ value: "Salary (K)", angle: -90, position: "insideLeft" }} />
-              <Tooltip
-                cursor={{ fill: "rgba(148, 163, 184, 0.15)" }}
-                formatter={(value) => [`$${value}K`, "Average Salary"]}
-              />
-              <Line
-                type="monotone"
-                dataKey="avgSalary"
-                stroke="#f59e0b"
-                strokeWidth={2}
-                dot={{ fill: "#f59e0b", r: 5 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
+        <Suspense fallback={<Card className="p-6"><Skeleton className="h-[300px]" /></Card>}>
+          <SalaryTrendsChart data={analytics.salaryTrends} />
+        </Suspense>
       )}
 
       {/* Job Board Sources and Top Companies */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {analytics.sourceData.length > 0 && (
-          <Card className="p-6">
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Briefcase className="w-5 h-5" />
-                Applications by Job Board Source
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Top sources for job applications
-              </p>
-            </div>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={analytics.sourceData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis type="number" allowDecimals={false} />
-                <YAxis dataKey="source" type="category" width={120} tick={{ fontSize: 12 }} />
-                <Tooltip
-                  cursor={{ fill: "rgba(148, 163, 184, 0.15)" }}
-                  formatter={(value) => [`${value} applications`, "Count"]}
-                />
-                <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
+          <Suspense fallback={<Card className="p-6"><Skeleton className="h-[300px]" /></Card>}>
+            <SourceDataChart data={analytics.sourceData} />
+          </Suspense>
         )}
-
         {analytics.topCompanies.length > 0 && (
-          <Card className="p-6">
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Briefcase className="w-5 h-5" />
-                Top Companies by Applications
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Companies you've applied to most
-              </p>
-            </div>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={analytics.topCompanies} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis type="number" allowDecimals={false} />
-                <YAxis dataKey="company" type="category" width={120} tick={{ fontSize: 12 }} />
-                <Tooltip
-                  cursor={{ fill: "rgba(148, 163, 184, 0.15)" }}
-                  formatter={(value) => [`${value} applications`, "Count"]}
-                />
-                <Bar dataKey="count" fill="#ec4899" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
+          <Suspense fallback={<Card className="p-6"><Skeleton className="h-[300px]" /></Card>}>
+            <TopCompaniesChart data={analytics.topCompanies} />
+          </Suspense>
         )}
       </div>
 
       {/* Application Activity by Day of Week */}
-      <Card className="p-6">
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Application Activity by Day of Week
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            When you typically submit applications
-          </p>
-        </div>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={analytics.dayOfWeekCounts}>
-            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-            <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-            <YAxis allowDecimals={false} />
-            <Tooltip
-              cursor={{ fill: "rgba(148, 163, 184, 0.15)" }}
-              formatter={(value) => [`${value} applications`, "Count"]}
-            />
-            <Bar dataKey="count" fill="#06b6d4" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </Card>
+      <Suspense fallback={<Card className="p-6"><Skeleton className="h-[300px]" /></Card>}>
+        <DayOfWeekChart data={analytics.dayOfWeekCounts} />
+      </Suspense>
     </div>
   );
 }
+
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2 } from '@/lib/lucide-icons';
 import Layout from './Layout';
 
 interface ProtectedRouteProps {
@@ -36,3 +36,4 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
 };
 
 export default ProtectedRoute;
+

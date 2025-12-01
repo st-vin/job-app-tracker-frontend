@@ -50,7 +50,7 @@ import {
   Handshake,
   MoreHorizontal,
   Loader2,
-} from "lucide-react";
+} from "@/lib/lucide-icons";
 import { format, formatDistanceToNow } from "date-fns";
 import { applicationsApi, remindersApi, notesApi } from "../api/client";
 import { Application, ApplicationStatus } from "../types/application.types";
@@ -754,3 +754,4 @@ export default function ApplicationDetailPage() {
     </div>
   );
 }
+

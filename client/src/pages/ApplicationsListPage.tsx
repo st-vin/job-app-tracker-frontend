@@ -24,7 +24,7 @@ import {
   Eye,
   Filter,
   XCircle,
-} from "lucide-react";
+} from "@/lib/lucide-icons";
 import { applicationsApi } from "../api/client";
 import { Application, ApplicationStatus } from "../types/application.types";
 import { toast } from "react-hot-toast";
@@ -458,3 +458,4 @@ export default function ApplicationsListPage() {
     </div>
   );
 }
+

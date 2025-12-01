@@ -7,7 +7,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
-import { Loader2 } from 'lucide-react';
+import { Loader2 } from '@/lib/lucide-icons';
 
 // Lazy load pages for code splitting
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -170,3 +170,4 @@ function App() {
 }
 
 export default App;
+

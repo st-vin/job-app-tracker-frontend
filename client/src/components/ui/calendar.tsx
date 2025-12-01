@@ -3,7 +3,7 @@ import {
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-} from "lucide-react";
+} from "@/lib/lucide-icons";
 import { DayButton, DayPicker, getDefaultClassNames } from "react-day-picker";
 
 import { cn } from "@/lib/utils";
@@ -209,3 +209,4 @@ function CalendarDayButton({
 }
 
 export { Calendar, CalendarDayButton };
+

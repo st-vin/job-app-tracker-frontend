@@ -13,7 +13,7 @@ import {
   Plus,
   Search,
   Trash2,
-} from "lucide-react";
+} from "@/lib/lucide-icons";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -400,4 +400,5 @@ export default function RemindersListPage() {
     </div>
   );
 }
+
 

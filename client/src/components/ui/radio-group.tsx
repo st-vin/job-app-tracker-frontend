@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as RadioGroupPrimitive from "@radix-ui/react-radio-group";
-import { CircleIcon } from "lucide-react";
+import { CircleIcon } from "@/lib/lucide-icons";
 
 import { cn } from "@/lib/utils";
 
@@ -41,3 +41,4 @@ function RadioGroupItem({
 }
 
 export { RadioGroup, RadioGroupItem };
+

@@ -4,7 +4,7 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Palette, Settings, ShieldAlert, Trash2 } from 'lucide-react';
+import { Bell, Palette, Settings, ShieldAlert, Trash2 } from '@/lib/lucide-icons';
 import { toast } from 'react-hot-toast';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -207,4 +207,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
 

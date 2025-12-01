@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/lib/lucide-icons";
 import { APP_LOGO, APP_TITLE } from "@/const";
 import { Streamdown } from 'streamdown';
 
@@ -26,3 +26,4 @@ export default function Home() {
     </div>
   );
 }
+

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Command as CommandPrimitive } from "cmdk";
-import { SearchIcon } from "lucide-react";
+import { SearchIcon } from "@/lib/lucide-icons";
 
 import { cn } from "@/lib/utils";
 import {
@@ -182,3 +182,4 @@ export {
   CommandShortcut,
   CommandSeparator,
 };
+

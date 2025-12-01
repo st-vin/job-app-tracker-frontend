@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { applicationsApi } from '../api/client';
-import { User, LogOut, Edit2 } from 'lucide-react';
+import { User, LogOut, Edit2 } from '@/lib/lucide-icons';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -125,3 +125,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+

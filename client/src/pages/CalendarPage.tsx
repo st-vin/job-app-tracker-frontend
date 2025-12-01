@@ -17,7 +17,7 @@ import { Application, ApplicationStatus } from "@/types/application.types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, CalendarDays, ChevronLeft, ChevronRight } from "@/lib/lucide-icons";
 import { cn } from "@/lib/utils";
 
 type EventType = "reminder" | "application";
@@ -296,5 +296,6 @@ export default function CalendarPage() {
     </div>
   );
 }
+
 
 

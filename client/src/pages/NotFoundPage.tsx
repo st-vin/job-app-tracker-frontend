@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle } from '@/lib/lucide-icons';
 
 export default function NotFoundPage() {
   const navigate = useNavigate();
@@ -35,3 +35,4 @@ export default function NotFoundPage() {
     </div>
   );
 }
+

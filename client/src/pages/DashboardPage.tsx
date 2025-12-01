@@ -1,21 +1,16 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-  Legend,
-  Cell,
-} from "recharts";
-import { Briefcase, TrendingUp, DollarSign, Calendar } from "lucide-react";
+import { Briefcase } from "@/lib/lucide-icons";
+import { TrendingUp } from "@/lib/lucide-icons";
+import { DollarSign } from "@/lib/lucide-icons";
+import { Calendar } from "@/lib/lucide-icons";
+
+// Lazy load chart component
+const DashboardStatusChart = lazy(() => import("../components/charts/DashboardChart").then(m => ({ default: m.DashboardStatusChart })));
 import { dashboardApi, applicationsApi, remindersApi } from "../api/client";
 import { ApplicationStatus } from "../types/application.types";
 
@@ -144,24 +139,9 @@ export default function DashboardPage() {
             {statsLoading ? (
               <Skeleton className="h-80" />
             ) : chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={chartData} margin={{ left: 12, right: 12 }}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="status" tickFormatter={formatStatusLabel} tick={{ fontSize: 12 }} />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip
-                    cursor={{ fill: "rgba(148, 163, 184, 0.15)" }}
-                    formatter={value => [`${value} applications`, "Count"]}
-                    labelFormatter={formatStatusLabel}
-                  />
-                  <Legend />
-                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                    {chartData.map(entry => (
-                      <Cell key={entry.status} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <Suspense fallback={<Skeleton className="h-80" />}>
+                <DashboardStatusChart data={chartData} formatStatusLabel={formatStatusLabel} />
+              </Suspense>
             ) : (
               <div className="flex h-80 items-center justify-center text-muted-foreground">
                 No data available
@@ -192,3 +172,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft } from '@/lib/lucide-icons';
 import { applicationsApi } from '../api/client';
 import { ApplicationStatus } from '../types/application.types';
 import { toast } from 'react-hot-toast';
@@ -259,3 +259,4 @@ export default function AddApplicationPage() {
     </div>
   );
 }
+

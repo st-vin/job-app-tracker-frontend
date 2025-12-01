@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle } from '@/lib/lucide-icons';
 import { authApi } from '../api/client';
 import { toast } from 'react-hot-toast';
 
@@ -138,3 +138,4 @@ export default function VerifyEmailPage() {
     </div>
   );
 }
+

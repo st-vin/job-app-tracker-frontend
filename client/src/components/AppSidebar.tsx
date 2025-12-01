@@ -14,7 +14,14 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { APP_LOGO, APP_TITLE } from "@/const";
-import { AlarmClock, CalendarDays, LayoutDashboard, ListChecks, PlusCircle, Settings2, UserRound, BarChart3 } from "lucide-react";
+import { AlarmClock } from "@/lib/lucide-icons";
+import { CalendarDays } from "@/lib/lucide-icons";
+import { LayoutDashboard } from "@/lib/lucide-icons";
+import { ListChecks } from "@/lib/lucide-icons";
+import { PlusCircle } from "@/lib/lucide-icons";
+import { Settings2 } from "@/lib/lucide-icons";
+import { UserRound } from "@/lib/lucide-icons";
+import { BarChart3 } from "@/lib/lucide-icons";
 
 type NavItem = {
   title: string;
@@ -185,4 +192,5 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+
 

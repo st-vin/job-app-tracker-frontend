@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "./ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut } from "@/lib/lucide-icons";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "./ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 
@@ -62,3 +62,4 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 };
 
 export default Layout;
+

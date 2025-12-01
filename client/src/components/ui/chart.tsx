@@ -1,5 +1,9 @@
 import * as React from "react";
-import * as RechartsPrimitive from "recharts";
+import type {
+  LegendProps,
+  ResponsiveContainerProps,
+  TooltipProps,
+} from "recharts";
 
 import { cn } from "@/lib/utils";
 
@@ -22,6 +26,18 @@ type ChartContextProps = {
 
 const ChartContext = React.createContext<ChartContextProps | null>(null);
 
+const ResponsiveContainer = React.lazy(() =>
+  import("recharts").then(module => ({ default: module.ResponsiveContainer }))
+);
+
+const TooltipPrimitive = React.lazy(() =>
+  import("recharts").then(module => ({ default: module.Tooltip }))
+);
+
+const LegendPrimitive = React.lazy(() =>
+  import("recharts").then(module => ({ default: module.Legend }))
+);
+
 function useChart() {
   const context = React.useContext(ChartContext);
 
@@ -40,9 +56,7 @@ function ChartContainer({
   ...props
 }: React.ComponentProps<"div"> & {
   config: ChartConfig;
-  children: React.ComponentProps<
-    typeof RechartsPrimitive.ResponsiveContainer
-  >["children"];
+  children: ResponsiveContainerProps["children"];
 }) {
   const uniqueId = React.useId();
   const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`;
@@ -59,9 +73,9 @@ function ChartContainer({
         {...props}
       >
         <ChartStyle id={chartId} config={config} />
-        <RechartsPrimitive.ResponsiveContainer>
-          {children}
-        </RechartsPrimitive.ResponsiveContainer>
+        <React.Suspense fallback={null}>
+          <ResponsiveContainer>{children}</ResponsiveContainer>
+        </React.Suspense>
       </div>
     </ChartContext.Provider>
   );
@@ -100,7 +114,11 @@ ${colorConfig
   );
 };
 
-const ChartTooltip = RechartsPrimitive.Tooltip;
+const ChartTooltip = (props: TooltipProps<number, string>) => (
+  <React.Suspense fallback={null}>
+    <TooltipPrimitive {...props} />
+  </React.Suspense>
+);
 
 function ChartTooltipContent({
   active,
@@ -116,7 +134,7 @@ function ChartTooltipContent({
   color,
   nameKey,
   labelKey,
-}: React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
+}: TooltipProps<number, string> &
   React.ComponentProps<"div"> & {
     hideLabel?: boolean;
     hideIndicator?: boolean;
@@ -248,7 +266,11 @@ function ChartTooltipContent({
   );
 }
 
-const ChartLegend = RechartsPrimitive.Legend;
+const ChartLegend = (props: LegendProps) => (
+  <React.Suspense fallback={null}>
+    <LegendPrimitive {...props} />
+  </React.Suspense>
+);
 
 function ChartLegendContent({
   className,
@@ -257,7 +279,7 @@ function ChartLegendContent({
   verticalAlign = "bottom",
   nameKey,
 }: React.ComponentProps<"div"> &
-  Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
+  Pick<LegendProps, "payload" | "verticalAlign"> & {
     hideIcon?: boolean;
     nameKey?: string;
   }) {
