@@ -176,7 +176,7 @@ export default function ApplicationsListPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-4xl font-bold">Applications</h1>
           <p className="text-muted-foreground mt-2">
@@ -188,7 +188,7 @@ export default function ApplicationsListPage() {
 
       {/* Search and Filters */}
       <Card className="space-y-4 p-4">
-        <div className="flex flex-col gap-4 md:flex-row">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="relative flex-1">
             <Search className="text-muted-foreground absolute left-3 top-3 h-4 w-4" />
             <Input
@@ -319,8 +319,9 @@ export default function ApplicationsListPage() {
 
       {/* Table View */}
       {viewMode === 'table' && (
-        <Card>
-          <Table>
+        <Card className="overflow-hidden">
+          <div className="w-full overflow-x-auto">
+            <Table className="min-w-[640px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Company</TableHead>
@@ -381,7 +382,8 @@ export default function ApplicationsListPage() {
                 </TableRow>
               )}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
         </Card>
       )}
 

@@ -340,16 +340,21 @@ export default function ApplicationDetailPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/applications')}>
+      <div className="flex flex-wrap items-center gap-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/applications')}
+          className="order-1 md:order-none"
+        >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
-        <div className="flex-1">
+        <div className="flex-1 min-w-[200px]">
           <h1 className="text-3xl font-bold">{application.companyName}</h1>
           <p className="text-muted-foreground">{application.position}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -394,7 +399,7 @@ export default function ApplicationDetailPage() {
 
       {/* Overview Card */}
       <Card className="p-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div>
             <p className="text-sm text-muted-foreground">Status</p>
             <Badge className={`mt-2 ${STATUS_COLORS[application.status]}`}>

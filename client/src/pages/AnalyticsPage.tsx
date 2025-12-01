@@ -285,7 +285,7 @@ export default function AnalyticsPage() {
   if (!analytics) {
     return (
       <div className="space-y-8">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-4xl font-bold">Analytics</h1>
             <p className="text-muted-foreground mt-2">Deep insights into your job application data</p>
@@ -301,7 +301,7 @@ export default function AnalyticsPage() {
   return (
     <div className="space-y-8 pb-8">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-4xl font-bold">Analytics</h1>
           <p className="text-muted-foreground mt-2">Deep insights into your job application data</p>

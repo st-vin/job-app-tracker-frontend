@@ -89,8 +89,13 @@ export default function AddApplicationPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/applications')}>
+      <div className="flex flex-wrap items-center gap-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/applications')}
+          className="order-1 md:order-none"
+        >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
@@ -101,7 +106,7 @@ export default function AddApplicationPage() {
       </div>
 
       {/* Form Card */}
-      <Card className="p-8 max-w-2xl">
+      <Card className="w-full max-w-2xl p-4 sm:p-6 lg:p-8 mx-auto">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Company and Position */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

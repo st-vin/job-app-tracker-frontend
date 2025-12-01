@@ -56,12 +56,12 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-4xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground mt-2">Welcome back! Here's your job application overview.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex w-full justify-end gap-3 sm:w-auto">
           <Button variant="outline" onClick={() => navigate('/applications')}>
             View All
           </Button>
